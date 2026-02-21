@@ -81,18 +81,7 @@ For testing and AI-safe sharing:
 
 ---
 
-## ⚠️ Warning Label (IKEA style)
-* **Assembly required:** You must manually update your allocations once a week.
-* **Do not force it:** If a piece (consultant) doesn't fit a project, don't just increase the `load` to 120%. Talk to them instead.
-* **Keep away from spreadsheets:** Importing an Excel file into Pussla is strictly forbidden and may cause the developers to cry.
-
----
-
 ## 🤝 Support
-Need help fitting the pieces together? 
+Need help fitting the pieces together? Take a look in the project Wiki or contact the Pussla maintainer.  
 
 **"Nu kör vi!"** (Let's go!)
-"""
-
-with open("README.md", "w", encoding="utf-8") as f:
-    f.write(content)

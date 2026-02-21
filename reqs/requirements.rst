@@ -1,64 +1,64 @@
 needs_content = """
-.. req:: Git-baserad planering
+.. req:: Git-based planning
    :id: REQ_PUSSLA_001
    :status: open
    :tags: core, workflow
 
-   Systemet ska använda Git för all resursplanering för att säkerställa spårbarhet, versionshantering och möjligheten till Pull Requests vid ändringar.
+   The system shall use Git for all resource planning to ensure traceability, version control, and pull-request-based review of changes.
 
-.. req:: Arkitektur i två lager
+.. req:: Two-layer architecture
    :id: REQ_PUSSLA_002
    :status: open
    :tags: security, architecture
 
-   Systemet måste separera personuppgifter (PII) i ett "Identity Layer" och anonymiserad data i ett "Allocation Layer" för att följa Privacy-by-Design.
+   The system must separate PII into an Identity Layer and anonymized data into an Allocation Layer to follow Privacy by Design.
 
-.. req:: AI-säker allokering
+.. req:: AI-safe allocation
    :id: REQ_PUSSLA_003
    :status: open
    :tags: ai, privacy
 
-   Allokeringslagret får endast använda anonyma alias. Detta tillåter analys via tredjeparts-AI utan att exponera personnamn.
+   The Allocation Layer may only use anonymous aliases. This enables third-party AI analysis without exposing personal names.
 
-.. req:: Validering av arbetsbelastning
+.. req:: Workload validation
    :id: REQ_PUSSLA_004
    :status: open
    :tags: validation
 
-   Systemet ska via en linter varna om en individs totala allokering överstiger 100% per tidsperiod.
+   The system shall use a linter to warn when an individual's total allocation exceeds 100% for any time period.
 
-.. req:: Skydd mot PII-läckage
+.. req:: PII leak protection
    :id: REQ_PUSSLA_005
    :status: open
    :tags: security, ci-cd
 
-   CI/CD-pipelinen måste automatiskt verifiera att inga namn eller personuppgifter har skrivits in i de publika allokeringsfilerna i YAML-format.
+   The CI/CD pipeline must automatically verify that no names or personal data are written in public allocation YAML files.
 
-.. req:: Kontext via Markdown
+.. req:: Context via Markdown
    :id: REQ_PUSSLA_006
    :status: open
    :tags: ux
 
-   Varje resurs ska ha en tillhörande Markdown-fil där kvalitativ information om mål och personlig utveckling kan dokumenteras, inte bara siffror.
+   Each resource shall have an associated Markdown file where qualitative information about goals and development can be documented, not only numeric data.
 
-.. req:: Projektmetadata i frontmatter
+.. req:: Project metadata in frontmatter
    :id: REQ_PUSSLA_008
    :status: open
    :tags: architecture, data-model
 
-   Varje projekt ska ha en egen Markdown-fil med YAML-frontmatter (t.ex. owner_alias, start_week, end_week, status) samt en fri Markdown-kropp för scope och risker.
+   Each project shall have its own Markdown file with YAML frontmatter (for example: owner_alias, start_week, end_week, status) and a free-form Markdown body for scope and risks.
 
-.. req:: Delbar AI-mapp utan identitet
+.. req:: Shareable AI folder without identity data
    :id: REQ_PUSSLA_009
    :status: open
    :tags: ai, privacy, structure
 
-   Test- och demonstrationsdata ska kunna delas via en enskild mapp `tst-data/planing/` som innehåller `allocations/` och `projects/`, medan `tst-data/identity/` hålls separat.
+   Test and demo data shall be shareable via a single folder, `tst-data/planing/`, containing `allocations/` and `projects/`, while `tst-data/identity/` remains separate.
 
-.. req:: Dashboard-visualisering
+.. req:: Dashboard visualization
    :id: REQ_PUSSLA_007
    :status: open
    :tags: frontend
 
-   Systemet ska kunna generera en visuell heatmap och kvartalsprognoser baserat på de underliggande textfilerna.
+   The system shall be able to generate a visual heatmap and quarterly forecasts based on the underlying text files.
 """

@@ -84,4 +84,11 @@ For testing and AI-safe sharing:
 ## 🤝 Support
 Need help fitting the pieces together? Take a look in the project Wiki or contact the Pussla maintainer.  
 
+---
+
+## ♥️ Contributing 
+- Why is something done in a specific way - see [[docs/design decisions/]]. 
+- Requirements are in Sphinx-Needs format in [[./reqs]].
+
+
 **"Nu kör vi!"** (Let's go!)

@@ -1,6 +1,7 @@
-![[./docs/pussla-logo.png]] 
+![Logo](/docs/pussla-logo.png)
 
-🧩 Pussla
+
+# 🧩 Pussla
 
 > **"Bitarna på plats."** (Getting the pieces in place.)
 >

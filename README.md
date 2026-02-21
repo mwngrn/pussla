@@ -1,4 +1,4 @@
-content = """# 🧩 Pussla
+🧩 Pussla
 
 > **"Bitarna på plats."** (Getting the pieces in place.)
 >

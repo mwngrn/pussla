@@ -1,0 +1,11 @@
+alias: PixelSmith
+allocations:
+  - project: Platform-Core
+    weeks: ["2026-W09", "2026-W10"]
+    load: 85
+  - project: Platform-Core
+    weeks: ["2026-W11", "2026-W12", "2026-W13"]
+    load: 75
+  - project: Project-Helix
+    weeks: ["2026-W14", "2026-W15", "2026-W16", "2026-W17"]
+    load: 65

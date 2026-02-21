@@ -1,0 +1,11 @@
+alias: LimeComet
+allocations:
+  - project: Project-Quartz
+    weeks: ["2026-W09", "2026-W10"]
+    load: 55
+  - project: Project-Quartz
+    weeks: ["2026-W11", "2026-W12", "2026-W13", "2026-W14"]
+    load: 75
+  - project: Project-Mercury
+    weeks: ["2026-W15", "2026-W16", "2026-W17"]
+    load: 70

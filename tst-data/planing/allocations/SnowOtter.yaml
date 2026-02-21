@@ -1,0 +1,11 @@
+alias: SnowOtter
+allocations:
+  - project: Project-Delta
+    weeks: ["2026-W09", "2026-W10"]
+    load: 50
+  - project: Project-Delta
+    weeks: ["2026-W11", "2026-W12", "2026-W13"]
+    load: 75
+  - project: Project-Support
+    weeks: ["2026-W14", "2026-W15", "2026-W16", "2026-W17"]
+    load: 60

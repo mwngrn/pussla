@@ -1,0 +1,14 @@
+alias: MossRiver
+allocations:
+  - project: Project-Maple
+    weeks: ["2026-W09", "2026-W10", "2026-W11"]
+    load: 70
+  - project: Vacation
+    weeks: ["2026-W12"]
+    load: 0
+  - project: Project-Maple
+    weeks: ["2026-W13", "2026-W14", "2026-W15"]
+    load: 80
+  - project: Internal-RnD
+    weeks: ["2026-W16", "2026-W17"]
+    load: 50

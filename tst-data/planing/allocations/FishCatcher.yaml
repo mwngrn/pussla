@@ -1,0 +1,11 @@
+alias: FishCatcher
+allocations:
+  - project: Project-Neon
+    weeks: ["2026-W09", "2026-W10", "2026-W11", "2026-W12"]
+    load: 80
+  - project: Project-Orbit
+    weeks: ["2026-W13", "2026-W14", "2026-W15"]
+    load: 70
+  - project: Internal-Enablement
+    weeks: ["2026-W16", "2026-W17"]
+    load: 40

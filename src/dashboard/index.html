@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pussla Dashboard</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --ink: #10222f;
+      --muted: #6f7f8b;
+      --line: #dbe2e8;
+      --accent: #005f73;
+      --ok: #2a9d8f;
+      --warn: #e9c46a;
+      --bad: #e76f51;
+      --none: #edf2f7;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top right, #c9f3ef 0%, var(--bg) 30%), var(--bg);
+    }
+
+    .layout { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+
+    aside {
+      background: linear-gradient(180deg, #0b3142 0%, #164d66 100%);
+      color: #e2edf2;
+      padding: 24px;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .brand h1 { margin: 0; font-size: 1.4rem; }
+    .brand p { margin: 8px 0 0; color: #a9c5d3; font-size: 0.85rem; }
+
+    .control { margin-top: 24px; }
+    .control label { display: block; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .06em; color: #9fc0cf; margin-bottom: 8px; }
+
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #2e6277;
+      background: #0e3c52;
+      color: #e5f3f9;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .toggle {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: #c9dee8;
+    }
+
+    main { padding: 24px; overflow: auto; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    .card .label { color: var(--muted); font-size: 0.85rem; }
+    .card .value { font-size: 1.5rem; font-weight: 700; margin-top: 6px; }
+
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: auto;
+    }
+
+    table { border-collapse: collapse; width: 100%; min-width: 900px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: center; }
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--panel);
+      text-align: left;
+      min-width: 220px;
+      z-index: 1;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #f0f4f8;
+      color: #385061;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      z-index: 2;
+    }
+
+    .name { font-weight: 600; }
+    .role { color: var(--muted); font-size: 0.78rem; }
+
+    .cell {
+      border-radius: 7px;
+      padding: 5px 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      min-width: 54px;
+      cursor: pointer;
+    }
+
+    .load-none { background: var(--none); color: #9ca8b5; }
+    .load-low { background: var(--warn); color: #fff; }
+    .load-ok { background: var(--ok); color: #fff; }
+    .load-bad { background: var(--bad); color: #fff; }
+
+    #details {
+      margin-top: 12px;
+      background: #f7fbfd;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      display: none;
+    }
+
+    #details h3 { margin: 0 0 8px; }
+    #details ul { margin: 0; padding-left: 18px; }
+    #details li { margin-bottom: 4px; }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { border-right: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+      main { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">
+        <h1>🧩 Pussla Dashboard</h1>
+        <p>Lokal vy för planering och beläggning</p>
+      </div>
+
+      <div class="control">
+        <label for="search">Sök</label>
+        <input id="search" type="text" placeholder="Namn eller alias" />
+      </div>
+
+      <label class="toggle">
+        <input id="pii" type="checkbox" checked />
+        Visa personuppgifter (PII)
+      </label>
+
+      <p id="generated" style="margin-top:16px;color:#a9c5d3;font-size:.8rem"></p>
+    </aside>
+
+    <main>
+      <section class="stats">
+        <div class="card"><div class="label">Antal personer</div><div class="value" id="stat-users">-</div></div>
+        <div class="card"><div class="label">Genomsnittlig beläggning</div><div class="value" id="stat-util">-</div></div>
+        <div class="card"><div class="label">Överbokade veckoslots</div><div class="value" id="stat-over">-</div></div>
+      </section>
+
+      <section class="table-wrap">
+        <table id="heatmap"></table>
+      </section>
+
+      <section id="details"></section>
+    </main>
+  </div>
+
+  <script>
+    const search = document.getElementById('search');
+    const pii = document.getElementById('pii');
+    const heatmap = document.getElementById('heatmap');
+    const details = document.getElementById('details');
+
+    let dashboardData = null;
+
+    function loadClass(load) {
+      if (load === 0) return 'load-none';
+      if (load > 100) return 'load-bad';
+      if (load >= 80) return 'load-ok';
+      return 'load-low';
+    }
+
+    function render() {
+      if (!dashboardData) return;
+
+      const term = search.value.trim().toLowerCase();
+      const users = dashboardData.users.filter(user => {
+        const displayName = user.display_name.toLowerCase();
+        const alias = user.alias.toLowerCase();
+        return !term || displayName.includes(term) || alias.includes(term);
+      });
+
+      const weeks = dashboardData.weeks;
+      const head = `
+        <thead>
+          <tr>
+            <th>Person</th>
+            ${weeks.map(w => `<th>${w}</th>`).join('')}
+          </tr>
+        </thead>
+      `;
+
+      const body = users.map(user => {
+        const person = `
+          <div class="name">${user.display_name}</div>
+          <div class="role">${user.alias} • ${user.role}</div>
+        `;
+
+        const cells = user.weekly_stats.map(slot => {
+          const label = slot.total_load === 0 ? '-' : `${slot.total_load}%`;
+          const encoded = encodeURIComponent(JSON.stringify({ user, slot }));
+          return `<td><div class="cell ${loadClass(slot.total_load)}" data-details="${encoded}">${label}</div></td>`;
+        }).join('');
+
+        return `<tr><td>${person}</td>${cells}</tr>`;
+      }).join('');
+
+      heatmap.innerHTML = `${head}<tbody>${body}</tbody>`;
+
+      heatmap.querySelectorAll('.cell').forEach(el => {
+        el.addEventListener('click', () => {
+          const raw = el.getAttribute('data-details');
+          if (!raw) return;
+          const { user, slot } = JSON.parse(decodeURIComponent(raw));
+          renderDetails(user, slot);
+        });
+      });
+    }
+
+    function renderDetails(user, slot) {
+      if (!slot.projects || slot.projects.length === 0) {
+        details.style.display = 'none';
+        details.innerHTML = '';
+        return;
+      }
+
+      const items = slot.projects.map(project => {
+        const context = project.context || {};
+        const summary = context.summary ? ` – ${context.summary}` : '';
+        return `<li><strong>${project.project}</strong>: ${project.load}%${summary}</li>`;
+      }).join('');
+
+      details.innerHTML = `
+        <h3>${user.display_name} • ${slot.week} • ${slot.total_load}%</h3>
+        <ul>${items}</ul>
+      `;
+      details.style.display = 'block';
+    }
+
+    async function loadData() {
+      const includePii = pii.checked ? '1' : '0';
+      const res = await fetch(`/api/dashboard-data?include_pii=${includePii}`);
+      dashboardData = await res.json();
+
+      document.getElementById('stat-users').textContent = dashboardData.metrics.users_count;
+      document.getElementById('stat-util').textContent = `${dashboardData.metrics.average_utilization}%`;
+      document.getElementById('stat-over').textContent = dashboardData.metrics.overbooked_slots;
+      document.getElementById('generated').textContent = `Genererad: ${dashboardData.generated_at}`;
+
+      details.style.display = 'none';
+      details.innerHTML = '';
+      render();
+    }
+
+    search.addEventListener('input', render);
+    pii.addEventListener('change', loadData);
+
+    loadData().catch(err => {
+      heatmap.innerHTML = `<tbody><tr><td>Kunde inte ladda data: ${err}</td></tr></tbody>`;
+    });
+  </script>
+</body>
+</html>

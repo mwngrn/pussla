@@ -36,12 +36,24 @@ Instead of a single "Start: Jan 1, End: June 30" entry, we group weeks to keep t
 ```yaml
 # Example: Allocation for FishCatcher
 - project: "Project-Neon"
-  weeks: [10, 11, 12, 13]  # March weeks
+  weeks: ["2026-W10", "2026-W11", "2026-W12", "2026-W13"]  # March weeks
   load: 80
 - project: "Project-Neon"
-  weeks: [14]             # Specific adjustment for Easter week
+  weeks: ["2026-W14"]             # Specific adjustment for Easter week
   load: 20
 ```
+
+---
+
+## Handling Partial-Week Allocations (e.g., Vacations)
+
+To maintain the simplicity of weekly buckets while supporting granular events like vacations or public holidays, we use the `load` field as a percentage of the standard 5-day work week:
+
+*   **1 Day Leave:** `load: 20`
+*   **2 Days Leave:** `load: 40`
+*   **Half Day:** `load: 10`
+
+This allows for precise capacity planning (e.g., a person taking Friday off has a `load` of 80 for that week) without the overhead of daily tracking. If specific dates are required for coordination, they should be noted as comments in the YAML file.
 
 ---
 

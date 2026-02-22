@@ -61,4 +61,12 @@ needs_content = """
    :tags: frontend
 
    The system shall be able to generate a visual heatmap and quarterly forecasts based on the underlying text files.
+
+.. req:: Possible assignment and leads
+   :id: REQ_PUSSLA_010
+   :status: open
+   :tags: structure
+
+   It shall be possible to track future leads and possible assignments for a person in order to track what projects he/she might be going into. These shall be clearly separately identifiable from decided assignments and be possible to filter out.
+
 """

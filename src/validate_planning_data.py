@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate Pussla planning data for schema, over-allocation, and PII leakage."""
+"""Validate Pussla planning data for schema, over-allocation, cross-references, and PII leakage."""
 
 from __future__ import annotations
 
@@ -53,9 +53,10 @@ def load_real_names(identity_dir: Path) -> list[str]:
     return names
 
 
-def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, dict[str, int]]]:
+def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, dict[str, int]], set[str]]:
     errors: list[str] = []
     totals: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    referenced_projects: set[str] = set()
 
     for path in sorted(allocations_dir.glob("*.yaml")):
         try:
@@ -93,6 +94,9 @@ def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, di
 
             if not isinstance(project, str) or not project.strip():
                 errors.append(f"{location}: 'project' must be a non-empty string")
+            else:
+                referenced_projects.add(project)
+
             if not isinstance(weeks, list) or not weeks:
                 errors.append(f"{location}: 'weeks' must be a non-empty list")
                 weeks = []
@@ -115,11 +119,12 @@ def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, di
                     f"over-allocation: alias '{alias}' has total load {total} in week {week} (>100)"
                 )
 
-    return errors, totals
+    return errors, totals, referenced_projects
 
 
-def validate_projects(projects_dir: Path) -> list[str]:
+def validate_projects(projects_dir: Path) -> tuple[list[str], set[str]]:
     errors: list[str] = []
+    referenced_aliases: set[str] = set()
     required = {"project_id", "name", "owner_alias", "start_week", "end_week", "status", "team_aliases"}
 
     for path in sorted(projects_dir.glob("*.md")):
@@ -138,8 +143,12 @@ def validate_projects(projects_dir: Path) -> list[str]:
             errors.append(f"{path}: 'project_id' must be a non-empty string")
         if not isinstance(frontmatter["name"], str) or not frontmatter["name"].strip():
             errors.append(f"{path}: 'name' must be a non-empty string")
-        if not isinstance(frontmatter["owner_alias"], str) or not frontmatter["owner_alias"].strip():
+        
+        owner = frontmatter.get("owner_alias")
+        if not isinstance(owner, str) or not owner.strip():
             errors.append(f"{path}: 'owner_alias' must be a non-empty string")
+        else:
+            referenced_aliases.add(owner)
 
         for field in ("start_week", "end_week"):
             value = frontmatter.get(field)
@@ -148,13 +157,19 @@ def validate_projects(projects_dir: Path) -> list[str]:
 
         if not isinstance(frontmatter["status"], str) or not frontmatter["status"].strip():
             errors.append(f"{path}: 'status' must be a non-empty string")
-        if not isinstance(frontmatter["team_aliases"], list):
+        
+        team = frontmatter.get("team_aliases")
+        if not isinstance(team, list):
             errors.append(f"{path}: 'team_aliases' must be a list")
+        else:
+            for alias in team:
+                if isinstance(alias, str):
+                    referenced_aliases.add(alias)
 
         if not body.strip():
             errors.append(f"{path}: markdown body must not be empty")
 
-    return errors
+    return errors, referenced_aliases
 
 
 def check_pii_leaks(public_files: list[Path], real_names: list[str]) -> list[str]:
@@ -179,7 +194,7 @@ def check_pii_leaks(public_files: list[Path], real_names: list[str]) -> list[str
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Pussla planning dataset")
-    parser.add_argument("--planning-dir", default="tst-data/planing", help="Path containing allocations/ and projects/")
+    parser.add_argument("--planning-dir", default="tst-data/planning", help="Path containing allocations/ and projects/")
     parser.add_argument("--identity-dir", default="tst-data/identity", help="Path containing identity markdown files")
     args = parser.parse_args()
 
@@ -198,15 +213,28 @@ def main() -> int:
             print(f"ERROR: {err}")
         return 1
 
-    alloc_errors, _ = validate_allocations(allocations_dir)
-    project_errors = validate_projects(projects_dir)
+    alloc_errors, totals, ref_projects = validate_allocations(allocations_dir)
+    project_errors, ref_aliases = validate_projects(projects_dir)
+    
+    known_aliases = {p.stem for p in allocations_dir.glob("*.yaml")}
+    known_projects = {p.stem for p in projects_dir.glob("*.md")}
+
+    cross_errors: list[str] = []
+    for proj in sorted(ref_projects):
+        if proj not in known_projects:
+            cross_errors.append(f"cross-reference: project '{proj}' referenced in allocations but not found in projects/")
+    
+    for alias in sorted(ref_aliases):
+        if alias not in known_aliases:
+            cross_errors.append(f"cross-reference: alias '{alias}' referenced in projects but not found in allocations/")
+
     real_names = load_real_names(identity_dir)
     pii_errors = check_pii_leaks(
         [*sorted(allocations_dir.glob("*.yaml")), *sorted(projects_dir.glob("*.md"))],
         real_names,
     )
 
-    all_errors = [*alloc_errors, *project_errors, *pii_errors]
+    all_errors = [*alloc_errors, *project_errors, *cross_errors, *pii_errors]
     if all_errors:
         for err in all_errors:
             print(f"ERROR: {err}")
@@ -214,8 +242,8 @@ def main() -> int:
         return 1
 
     print("Validation passed.")
-    print(f"- allocations files: {len(list(allocations_dir.glob('*.yaml')))}")
-    print(f"- project files: {len(list(projects_dir.glob('*.md')))}")
+    print(f"- allocations files: {len(known_aliases)}")
+    print(f"- project files: {len(known_projects)}")
     print(f"- identity files scanned: {len(list(identity_dir.glob('*.md')))}")
     return 0
 

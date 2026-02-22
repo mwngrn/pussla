@@ -45,6 +45,17 @@ class DashboardServer(ThreadingHTTPServer):
     identity_dir: Path
 
 
+def _resolve_planning_dir(data_dir: Path, planning_override: str | None) -> Path:
+    if planning_override:
+        return Path(planning_override)
+
+    preferred = data_dir / "planning"
+    legacy = data_dir / "planing"
+    if preferred.exists() or not legacy.exists():
+        return preferred
+    return legacy
+
+
 def run_server(host: str, port: int, planning_dir: Path, identity_dir: Path) -> None:
     static_dir = Path(__file__).resolve().parent
 
@@ -73,13 +84,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run local Pussla dashboard")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
-    parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planing/ and identity/")
+    parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planning/ (or legacy planing/) and identity/")
     parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains allocations/ and projects/)")
     parser.add_argument("--identity-dir", default=None, help="Override identity folder")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
-    planning_dir = Path(args.planning_dir) if args.planning_dir else data_dir / "planing"
+    planning_dir = _resolve_planning_dir(data_dir, args.planning_dir)
     identity_dir = Path(args.identity_dir) if args.identity_dir else data_dir / "identity"
 
     run_server(

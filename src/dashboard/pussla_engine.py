@@ -20,6 +20,17 @@ def _parse_iso_week(value: str) -> tuple[int, int] | None:
     return int(m.group(1)), int(m.group(2))
 
 
+def _resolve_planning_dir(data_dir: Path, planning_override: str | None) -> Path:
+    if planning_override:
+        return Path(planning_override)
+
+    preferred = data_dir / "planning"
+    legacy = data_dir / "planing"
+    if preferred.exists() or not legacy.exists():
+        return preferred
+    return legacy
+
+
 def _parse_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
@@ -219,7 +230,7 @@ def build_dashboard_data(
 
 def write_dashboard_json(
     output_file: str | Path = "pussla_data.json",
-    planning_dir: str | Path = "tst-data/planing",
+    planning_dir: str | Path = "tst-data/planning",
     identity_dir: str | Path = "tst-data/identity",
     include_pii: bool = True,
 ) -> Path:
@@ -235,7 +246,7 @@ def write_dashboard_json(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build dashboard JSON from Pussla data")
-    parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planing/ and identity/")
+    parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planning/ (or legacy planing/) and identity/")
     parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains allocations/ and projects/)")
     parser.add_argument("--identity-dir", default=None, help="Override identity folder")
     parser.add_argument("--output-file", default="pussla_data.json")
@@ -243,7 +254,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
-    planning_dir = Path(args.planning_dir) if args.planning_dir else data_dir / "planing"
+    planning_dir = _resolve_planning_dir(data_dir, args.planning_dir)
     identity_dir = Path(args.identity_dir) if args.identity_dir else data_dir / "identity"
 
     output = write_dashboard_json(

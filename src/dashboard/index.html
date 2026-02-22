@@ -168,6 +168,59 @@
     #details ul { margin: 0; padding-left: 18px; }
     #details li { margin-bottom: 4px; }
 
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(16, 34, 47, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 20;
+    }
+
+    .modal {
+      width: min(760px, 100%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .modal h3 { margin: 0 0 10px; }
+    .modal-grid { display: grid; gap: 8px; margin-bottom: 10px; }
+    .edit-row {
+      display: grid;
+      grid-template-columns: 1fr 120px 90px;
+      gap: 8px;
+      align-items: center;
+    }
+    .edit-row input {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      font: inherit;
+    }
+    .edit-row button,
+    .modal-actions button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #f6f9fb;
+      cursor: pointer;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .modal-error {
+      color: #b42318;
+      font-size: 0.85rem;
+      min-height: 1.2rem;
+    }
+
     @media (max-width: 960px) {
       .layout { grid-template-columns: 1fr; }
       aside { border-right: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -211,6 +264,21 @@
     </main>
   </div>
 
+  <div id="editor-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+    <div class="modal">
+      <h3 id="editor-title">Redigera vecka</h3>
+      <div id="editor-meta" class="role"></div>
+      <div id="editor-total" class="name" style="margin:8px 0 10px;"></div>
+      <div id="editor-rows" class="modal-grid"></div>
+      <button id="editor-add" type="button">+ Lägg till projekt</button>
+      <div id="editor-error" class="modal-error"></div>
+      <div class="modal-actions">
+        <button id="editor-cancel" type="button">Avbryt</button>
+        <button id="editor-save" type="button">Spara ändringar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/week_format.js"></script>
   <script src="/header_groups.js"></script>
   <script>
@@ -218,14 +286,32 @@
     const pii = document.getElementById('pii');
     const heatmap = document.getElementById('heatmap');
     const details = document.getElementById('details');
+    const editorBackdrop = document.getElementById('editor-backdrop');
+    const editorRows = document.getElementById('editor-rows');
+    const editorMeta = document.getElementById('editor-meta');
+    const editorTotal = document.getElementById('editor-total');
+    const editorError = document.getElementById('editor-error');
+    const editorAdd = document.getElementById('editor-add');
+    const editorCancel = document.getElementById('editor-cancel');
+    const editorSave = document.getElementById('editor-save');
 
     let dashboardData = null;
+    let editorState = null;
 
     function loadClass(load) {
       if (load === 0) return 'load-none';
       if (load > 100) return 'load-bad';
       if (load >= 80) return 'load-ok';
       return 'load-low';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     function render() {
@@ -302,7 +388,7 @@
           const raw = el.getAttribute('data-details');
           if (!raw) return;
           const { user, slot } = JSON.parse(decodeURIComponent(raw));
-          renderDetails(user, slot);
+          openEditor(user, slot);
         });
       });
     }
@@ -327,6 +413,135 @@
       details.style.display = 'block';
     }
 
+    function getProjectChoices() {
+      const choices = new Set();
+      if (!dashboardData || !Array.isArray(dashboardData.raw_allocations)) return [];
+      dashboardData.raw_allocations.forEach(entry => {
+        if (entry && typeof entry.project === 'string' && entry.project.trim()) {
+          choices.add(entry.project.trim());
+        }
+      });
+      return Array.from(choices).sort((a, b) => a.localeCompare(b));
+    }
+
+    function drawEditorRows() {
+      if (!editorState) return;
+      const options = getProjectChoices();
+      const rowsHtml = editorState.rows.map((row, idx) => {
+        const load = Number.isFinite(row.load) ? row.load : 0;
+        return `
+          <div class="edit-row" data-index="${idx}">
+            <input type="text" class="edit-project" list="project-options" value="${escapeHtml(row.project)}" placeholder="Projekt" />
+            <input type="number" class="edit-load" value="${load}" min="0" step="1" />
+            <button type="button" class="edit-remove">Ta bort</button>
+          </div>
+        `;
+      }).join('');
+      editorRows.innerHTML = `
+        <datalist id="project-options">
+          ${options.map(name => `<option value="${escapeHtml(name)}"></option>`).join('')}
+        </datalist>
+        ${rowsHtml}
+      `;
+      refreshEditorTotal();
+    }
+
+    function refreshEditorTotal() {
+      if (!editorState) return;
+      const total = editorState.rows.reduce((acc, row) => acc + (Number.isFinite(row.load) ? row.load : 0), 0);
+      editorTotal.textContent = `Total vecka: ${total}%`;
+    }
+
+    function setEditorError(message) {
+      editorError.textContent = message || '';
+    }
+
+    function openEditor(user, slot) {
+      const rows = (slot.projects || []).map(project => ({
+        project: String(project.project || '').trim(),
+        load: Number.isFinite(project.load) ? project.load : 0,
+      }));
+
+      editorState = {
+        alias: user.alias,
+        displayName: user.display_name,
+        week: slot.week,
+        rows: rows.length ? rows : [{ project: '', load: 0 }],
+      };
+
+      editorMeta.textContent = `${editorState.displayName} (${editorState.alias}) • ${formatWeekLabel(editorState.week)}`;
+      setEditorError('');
+      drawEditorRows();
+      editorBackdrop.style.display = 'flex';
+    }
+
+    function closeEditor() {
+      editorState = null;
+      editorBackdrop.style.display = 'none';
+      setEditorError('');
+    }
+
+    function collectEditorPayload() {
+      if (!editorState) {
+        throw new Error('No editor state available');
+      }
+
+      const rows = Array.from(editorRows.querySelectorAll('.edit-row'));
+      const allocations = [];
+      for (const row of rows) {
+        const projectInput = row.querySelector('.edit-project');
+        const loadInput = row.querySelector('.edit-load');
+        const project = String(projectInput?.value || '').trim();
+        const loadRaw = String(loadInput?.value || '').trim();
+        if (!project && !loadRaw) continue;
+        if (!project) throw new Error('Projekt måste anges för varje rad');
+        if (!/^\d+$/.test(loadRaw)) throw new Error('Beläggning måste vara ett heltal >= 0');
+        const load = Number(loadRaw);
+        allocations.push({ project, load });
+      }
+
+      return {
+        alias: editorState.alias,
+        week: editorState.week,
+        allocations,
+      };
+    }
+
+    async function saveEditor() {
+      if (!editorState) return;
+      setEditorError('');
+      let payload;
+      try {
+        payload = collectEditorPayload();
+      } catch (err) {
+        setEditorError(err instanceof Error ? err.message : String(err));
+        return;
+      }
+
+      if (!window.confirm('Spara ändringar för denna vecka?')) {
+        return;
+      }
+
+      editorSave.disabled = true;
+      try {
+        const res = await fetch('/api/allocation/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Kunde inte spara ändringarna');
+        }
+        closeEditor();
+        await loadData();
+      } catch (err) {
+        setEditorError(err instanceof Error ? err.message : String(err));
+      } finally {
+        editorSave.disabled = false;
+      }
+    }
+
     async function loadData() {
       const includePii = pii.checked ? '1' : '0';
       const res = await fetch(`/api/dashboard-data?include_pii=${includePii}`);
@@ -344,6 +559,46 @@
 
     search.addEventListener('input', render);
     pii.addEventListener('change', loadData);
+    editorAdd.addEventListener('click', () => {
+      if (!editorState) return;
+      editorState.rows.push({ project: '', load: 0 });
+      drawEditorRows();
+    });
+    editorCancel.addEventListener('click', closeEditor);
+    editorSave.addEventListener('click', saveEditor);
+    editorBackdrop.addEventListener('click', (event) => {
+      if (event.target === editorBackdrop) closeEditor();
+    });
+    editorRows.addEventListener('input', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const rowEl = target.closest('.edit-row');
+      if (!rowEl || !editorState) return;
+      const idx = Number(rowEl.getAttribute('data-index'));
+      if (!Number.isInteger(idx) || idx < 0 || idx >= editorState.rows.length) return;
+      if (target.classList.contains('edit-project')) {
+        editorState.rows[idx].project = target.value;
+      }
+      if (target.classList.contains('edit-load')) {
+        const v = Number(target.value);
+        editorState.rows[idx].load = Number.isFinite(v) ? Math.max(0, Math.trunc(v)) : 0;
+      }
+      refreshEditorTotal();
+    });
+    editorRows.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.classList.contains('edit-remove') || !editorState) return;
+      const rowEl = target.closest('.edit-row');
+      if (!rowEl) return;
+      const idx = Number(rowEl.getAttribute('data-index'));
+      if (!Number.isInteger(idx) || idx < 0 || idx >= editorState.rows.length) return;
+      editorState.rows.splice(idx, 1);
+      if (editorState.rows.length === 0) {
+        editorState.rows.push({ project: '', load: 0 });
+      }
+      drawEditorRows();
+    });
 
     loadData().catch(err => {
       heatmap.innerHTML = `<tbody><tr><td>Kunde inte ladda data: ${err}</td></tr></tbody>`;

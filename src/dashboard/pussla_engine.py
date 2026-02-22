@@ -5,6 +5,7 @@ import re
 import argparse
 from collections import defaultdict
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,18 @@ def _parse_iso_week(value: str) -> tuple[int, int] | None:
     if not m:
         return None
     return int(m.group(1)), int(m.group(2))
+
+
+def _normalize_week(value: str) -> str | None:
+    parsed = _parse_iso_week(value)
+    if parsed is None:
+        return None
+    return f"{parsed[0]:04d}-W{parsed[1]:02d}"
+
+
+def _week_sort_key(value: str) -> tuple[int, int]:
+    parsed = _parse_iso_week(value)
+    return parsed if parsed is not None else (9999, 53)
 
 
 def _resolve_planning_dir(data_dir: Path, planning_override: str | None) -> Path:
@@ -96,6 +109,142 @@ def _collect_project_context(projects_dir: Path) -> dict[str, dict[str, str | No
     return contexts
 
 
+def update_week_allocations(
+    planning_dir: str | Path,
+    alias: str,
+    week: str,
+    allocations: list[dict[str, Any]],
+) -> dict[str, Any]:
+    if not isinstance(alias, str) or not alias.strip():
+        raise ValueError("alias must be a non-empty string")
+
+    normalized_week = _normalize_week(week)
+    if normalized_week is None:
+        raise ValueError("week must be in YYYY-Www format")
+
+    if not isinstance(allocations, list):
+        raise ValueError("allocations must be a list")
+
+    normalized_entries: list[dict[str, Any]] = []
+    merged_load_by_project: dict[str, int] = {}
+    for entry in allocations:
+        if not isinstance(entry, dict):
+            raise ValueError("each allocation entry must be an object")
+
+        project = entry.get("project")
+        load = entry.get("load")
+        if not isinstance(project, str) or not project.strip():
+            raise ValueError("allocation project must be a non-empty string")
+        if not isinstance(load, int):
+            raise ValueError("allocation load must be an integer")
+        if load < 0:
+            raise ValueError("allocation load cannot be negative")
+
+        project = project.strip()
+        merged_load_by_project[project] = merged_load_by_project.get(project, 0) + load
+
+    for project, load in merged_load_by_project.items():
+        if load <= 0:
+            continue
+        normalized_entries.append({"project": project, "load": load})
+
+    planning_path = Path(planning_dir)
+    alloc_file = planning_path / "allocations" / f"{alias}.yaml"
+    if not alloc_file.exists():
+        raise FileNotFoundError(f"allocation file not found for alias '{alias}'")
+
+    try:
+        data = yaml.safe_load(alloc_file.read_text(encoding="utf-8")) or {}
+    except Exception as exc:
+        raise ValueError(f"failed to parse allocation file for '{alias}'") from exc
+
+    if not isinstance(data, dict):
+        raise ValueError(f"allocation file for '{alias}' must contain a YAML object")
+
+    file_alias = data.get("alias")
+    if not isinstance(file_alias, str) or not file_alias.strip():
+        data["alias"] = alias
+    elif file_alias != alias:
+        raise ValueError(f"allocation file alias mismatch: expected '{alias}', found '{file_alias}'")
+
+    raw_allocations = data.get("allocations")
+    if raw_allocations is None:
+        raw_allocations = []
+    if not isinstance(raw_allocations, list):
+        raise ValueError("allocation file field 'allocations' must be a list")
+
+    rebuilt: list[dict[str, Any]] = []
+    for entry in raw_allocations:
+        if not isinstance(entry, dict):
+            continue
+        project = entry.get("project")
+        weeks = entry.get("weeks")
+        load = entry.get("load")
+        if not isinstance(project, str) or not isinstance(weeks, list) or not isinstance(load, int):
+            continue
+
+        kept_weeks: list[str] = []
+        for raw_week in weeks:
+            if not isinstance(raw_week, str):
+                continue
+            normalized = _normalize_week(raw_week)
+            if normalized is None or normalized == normalized_week:
+                continue
+            kept_weeks.append(normalized)
+
+        if not kept_weeks:
+            continue
+
+        unique_sorted_weeks = sorted(set(kept_weeks), key=_week_sort_key)
+        rebuilt.append(
+            {
+                "project": project,
+                "weeks": unique_sorted_weeks,
+                "load": load,
+            }
+        )
+
+    for entry in normalized_entries:
+        project = entry["project"]
+        load = entry["load"]
+        existing = None
+        for candidate in rebuilt:
+            if candidate.get("project") == project and candidate.get("load") == load:
+                existing = candidate
+                break
+
+        if existing is None:
+            rebuilt.append(
+                {
+                    "project": project,
+                    "weeks": [normalized_week],
+                    "load": load,
+                }
+            )
+        else:
+            weeks = [w for w in existing.get("weeks", []) if isinstance(w, str)]
+            if normalized_week not in weeks:
+                weeks.append(normalized_week)
+            existing["weeks"] = sorted(set(weeks), key=_week_sort_key)
+
+    data["allocations"] = rebuilt
+
+    alloc_file.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile("w", encoding="utf-8", dir=alloc_file.parent, delete=False) as tmp:
+        yaml.safe_dump(data, tmp, sort_keys=False, allow_unicode=True)
+        temp_path = Path(tmp.name)
+
+    temp_path.replace(alloc_file)
+
+    total_load = sum(entry["load"] for entry in normalized_entries)
+    return {
+        "alias": alias,
+        "week": normalized_week,
+        "projects_count": len(normalized_entries),
+        "total_load": total_load,
+    }
+
+
 def build_dashboard_data(
     planning_dir: str | Path,
     identity_dir: str | Path,
@@ -150,11 +299,9 @@ def build_dashboard_data(
             for week in weeks:
                 if not isinstance(week, str):
                     continue
-                parsed = _parse_iso_week(week)
-                if parsed is None:
+                normalized = _normalize_week(week)
+                if normalized is None:
                     continue
-
-                normalized = f"{parsed[0]:04d}-W{parsed[1]:02d}"
                 seen_weeks.add(normalized)
 
                 bucket = user["weekly"][normalized]
@@ -176,7 +323,7 @@ def build_dashboard_data(
                     }
                 )
 
-    sorted_weeks = sorted(seen_weeks, key=lambda w: _parse_iso_week(w) or (9999, 53))
+    sorted_weeks = sorted(seen_weeks, key=_week_sort_key)
 
     users: list[dict[str, Any]] = []
     for alias in sorted(users_by_alias):

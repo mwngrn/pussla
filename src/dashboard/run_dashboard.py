@@ -7,7 +7,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from pussla_engine import build_dashboard_data
+from pussla_engine import build_dashboard_data, update_week_allocations
 
 
 class DashboardHandler(SimpleHTTPRequestHandler):
@@ -38,6 +38,64 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.path = "/index.html"
 
         super().do_GET()
+
+    def _send_json(self, status: int, payload: dict) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self) -> None:  # noqa: N802
+        parsed = urlparse(self.path)
+        if parsed.path != "/api/allocation/update":
+            self._send_json(404, {"error": "Not found"})
+            return
+
+        try:
+            content_length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self._send_json(400, {"error": "Invalid Content-Length header"})
+            return
+
+        if content_length <= 0:
+            self._send_json(400, {"error": "Request body is required"})
+            return
+
+        raw_body = self.rfile.read(content_length)
+        try:
+            payload = json.loads(raw_body.decode("utf-8"))
+        except Exception:
+            self._send_json(400, {"error": "Invalid JSON body"})
+            return
+
+        if not isinstance(payload, dict):
+            self._send_json(400, {"error": "JSON body must be an object"})
+            return
+
+        alias = payload.get("alias")
+        week = payload.get("week")
+        allocations = payload.get("allocations")
+
+        try:
+            result = update_week_allocations(
+                planning_dir=self.server.planning_dir,
+                alias=alias,
+                week=week,
+                allocations=allocations,
+            )
+        except FileNotFoundError as exc:
+            self._send_json(404, {"error": str(exc)})
+            return
+        except ValueError as exc:
+            self._send_json(400, {"error": str(exc)})
+            return
+        except Exception:
+            self._send_json(500, {"error": "Failed to update allocation"})
+            return
+
+        self._send_json(200, {"ok": True, "updated": result})
 
 
 class DashboardServer(ThreadingHTTPServer):

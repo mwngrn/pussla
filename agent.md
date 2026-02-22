@@ -2,6 +2,13 @@
 
 This document defines the working context for the coding agent assisting with development and maintenance of **Pussla**, a Planning-as-Code system.
 
+## Way of Working (WoW)
+- Canonical workflow document: `docs/way-of-working.md`.
+- Requirements are added and tracked with Sphinx-needs in `reqs/`.
+- Stories, to-do work, and implementation tracking are done in Backlog.md under `backlog/`.
+- Documentation and design decisions are written and maintained in `docs/`.
+- `README.md` is the high-level overview and points to deeper documentation.
+
 ## Project Core Architecture
 - Build a resource planning tool for around 100 people.
 - Philosophy: Planning-as-Code (Git-based, human-readable).

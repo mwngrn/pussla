@@ -70,6 +70,20 @@ While the data lives in text files, we view it through the **Pussla Dashboard**:
 * **Quarterly Forecast:** Aggregated data for sales and management.
 * **Privacy Mode:** A toggle that shows aliases (`FishCatcher`) or names (`Erik A.`) depending on your permissions.
 
+### Run Dashboard Locally (No Deploy)
+You can run the dashboard as a local web GUI, similar to `backlog.md`, without deploying to any web server.
+
+1. Start the local server:
+   `python src/dashboard/run_dashboard.py`
+2. Open:
+   `http://127.0.0.1:8080`
+
+Optional flags:
+* `--port 8090`
+* `--data-dir /path/to/data-root` (expects `planing/` and `identity/` under that folder)
+* `--planning-dir tst-data/planing`
+* `--identity-dir tst-data/identity`
+
 ---
 
 ## 🧪 Sample Data Layout
@@ -89,6 +103,7 @@ Need help fitting the pieces together? Take a look in the project Wiki or contac
 ## ♥️ Contributing 
 - Why is something done in a specific way - see [[docs/design decisions/]]. 
 - Requirements are in Sphinx-Needs format in [[./reqs]].
+- Way of Working (requirements, backlog, docs responsibilities) is defined in `docs/way-of-working.md`.
 
 
 **"Nu kör vi!"** (Let's go!)

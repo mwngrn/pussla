@@ -1,9 +1,8 @@
-# Way of Working (WoW):
-# - This file is the source of truth for requirements using Sphinx-needs.
-# - Stories and implementation tasks are tracked in Backlog.md (`backlog/`).
-# - Broader documentation and design decisions live in `docs/`.
+Requirements
+============
 
-needs_content = """
+This page is the source of truth for formal requirements (Sphinx-needs).
+
 .. req:: Git-based planning
    :id: REQ_PUSSLA_001
    :status: open
@@ -92,7 +91,7 @@ needs_content = """
 
 .. req:: Dashboard grouped calendar headers
    :id: REQ_PUSSLA_013
-   :status: open
+   :status: implemented
    :tags: dashboard, ux, frontend
 
    The dashboard shall show grouped headers with Year at the top, Month (without year) in the middle, and Week at the bottom.
@@ -100,7 +99,7 @@ needs_content = """
 
 .. req:: Dashboard weekly footer summary
    :id: REQ_PUSSLA_014
-   :status: open
+   :status: implemented
    :tags: dashboard, frontend, reporting
 
    The dashboard shall show a footer row with allocation percentage per week column.
@@ -108,18 +107,43 @@ needs_content = """
 
 .. req:: Dashboard week label format
    :id: REQ_PUSSLA_015
-   :status: open
+   :status: implemented
    :tags: dashboard, frontend, formatting
 
    The dashboard shall display week labels in `Www` format (for example `W01`) while keeping canonical storage/API keys in `YYYY-Www` format.
 
 .. req:: Dashboard editable weekly allocations
    :id: REQ_PUSSLA_016
-   :status: open
+   :status: implemented
    :tags: dashboard, editing, api, data-write
 
    The dashboard shall allow editing allocations for a selected person-week with support for multiple projects in the same week.
    Saving shall require explicit user action in the GUI (Save), support cancel/discard, and persist changes to allocation YAML files.
    Overbooking (>100%) is allowed and shall not block save.
 
-"""
+
+Requirement Status Matrix
+=========================
+
+.. needtable:: Requirement status overview
+   :types: req
+   :columns: id;title;status;tags
+   :sort: id
+
+
+Requirement-Test Gap Analysis
+=============================
+
+The tables below assume tests link to requirements via ``:links: REQ_...``.
+
+.. needtable:: Implemented requirements without linked tests
+   :types: req
+   :columns: id;title;status;links_back
+   :sort: id
+   :filter: status == "implemented" and len(links_back) == 0
+
+.. needtable:: Tests without linked requirements
+   :types: test
+   :columns: id;title;status;links
+   :sort: id
+   :filter: len(links) == 0

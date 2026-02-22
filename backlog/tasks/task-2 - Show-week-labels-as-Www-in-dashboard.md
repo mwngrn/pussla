@@ -1,10 +1,11 @@
 ---
 id: task-2
-title: Change the week format to YYwWW
-status: To Do
-assignee: []
+title: Show week labels as Www in dashboard
+status: Done
+assignee:
+  - codex
 created_date: '2026-02-22 17:46'
-updated_date: '2026-02-22 18:05'
+updated_date: '2026-02-22 18:11'
 labels:
   - dashboard
   - formatting
@@ -26,11 +27,11 @@ Scope:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Backend/API continues to use canonical ISO week keys in format `YYYY-Www`.
-- [ ] #2 Dashboard week labels show week number only in `Www` format and omit year entirely.
-- [ ] #3 Week columns remain ordered correctly across year boundaries.
-- [ ] #4 Formatting is covered by tests for representative week values (including `W01`, `W52`, `W53`).
-- [ ] #5 No regression in heatmap cell alignment or interactions after label format change.
+- [x] #1 Backend/API continues to use canonical ISO week keys in format `YYYY-Www`.
+- [x] #2 Dashboard week labels show week number only in `Www` format and omit year entirely.
+- [x] #3 Week columns remain ordered correctly across year boundaries.
+- [x] #4 Formatting is covered by tests for representative week values (including `W01`, `W52`, `W53`).
+- [x] #5 No regression in heatmap cell alignment or interactions after label format change.
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -47,4 +48,14 @@ Scope:
 
 <!-- SECTION:NOTES:BEGIN -->
 Decision confirmed: week header should show week number only in `Www` format (e.g. `W01`) and skip year entirely. Year context is provided by higher-level year/month headers.
+
+Started implementation on 2026-02-22: updating dashboard week header labels to `Www` format while preserving canonical backend week keys.
+
+Implemented in `src/dashboard/index.html` by using shared `formatWeekLabel` for header and details week display.
+
+Added shared formatter in `src/dashboard/week_format.js`.
+
+Added automated formatter test in `tests/test_week_format.js` and verified via `node --test tests/test_week_format.js` (pass).
+
+Verified existing Python tests with `python -m unittest discover -s tests -p 'test_*.py'` (3 passed).
 <!-- SECTION:NOTES:END -->

@@ -178,6 +178,7 @@
     </main>
   </div>
 
+  <script src="/week_format.js"></script>
   <script>
     const search = document.getElementById('search');
     const pii = document.getElementById('pii');
@@ -208,7 +209,7 @@
         <thead>
           <tr>
             <th>Person</th>
-            ${weeks.map(w => `<th>${w}</th>`).join('')}
+            ${weeks.map(w => `<th>${formatWeekLabel(w)}</th>`).join('')}
           </tr>
         </thead>
       `;
@@ -254,7 +255,7 @@
       }).join('');
 
       details.innerHTML = `
-        <h3>${user.display_name} • ${slot.week} • ${slot.total_load}%</h3>
+        <h3>${user.display_name} • ${formatWeekLabel(slot.week)} • ${slot.total_load}%</h3>
         <ul>${items}</ul>
       `;
       details.style.display = 'block';

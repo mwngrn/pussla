@@ -87,7 +87,7 @@
 
     table { border-collapse: collapse; width: 100%; min-width: 900px; }
     th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: center; }
-    th:first-child, td:first-child {
+    td:first-child {
       position: sticky;
       left: 0;
       background: var(--panel);
@@ -103,6 +103,29 @@
       font-size: 0.78rem;
       text-transform: uppercase;
       z-index: 2;
+    }
+    thead tr.head-year th { top: 0; z-index: 4; }
+    thead tr.head-month th { top: 33px; z-index: 3; text-transform: none; }
+    thead tr.head-week th { top: 66px; z-index: 2; }
+    th.row-header {
+      position: sticky;
+      left: 0;
+      top: 0;
+      z-index: 5;
+      text-transform: uppercase;
+      text-align: left;
+      min-width: 220px;
+    }
+    .month-cell {
+      display: grid;
+      gap: 2px;
+      justify-items: center;
+      line-height: 1.1;
+    }
+    .month-util {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 600;
     }
 
     .name { font-weight: 600; }
@@ -179,6 +202,7 @@
   </div>
 
   <script src="/week_format.js"></script>
+  <script src="/header_groups.js"></script>
   <script>
     const search = document.getElementById('search');
     const pii = document.getElementById('pii');
@@ -205,10 +229,30 @@
       });
 
       const weeks = dashboardData.weeks;
+      const { yearGroups, monthGroups } = buildCalendarGroups(weeks);
+      const monthPercents = calculateMonthAllocationPercentages({
+        weeks,
+        users,
+        monthGroups,
+      });
+      const renderPercent = (value) => `${Number(value).toFixed(1).replace(/\.0$/, "")}%`;
       const head = `
         <thead>
-          <tr>
-            <th>Person</th>
+          <tr class="head-year">
+            <th class="row-header" rowspan="3">Person</th>
+            ${yearGroups.map(group => `<th colspan="${group.span}">${group.label}</th>`).join('')}
+          </tr>
+          <tr class="head-month">
+            ${monthGroups.map((group, idx) => `
+              <th colspan="${group.span}">
+                <div class="month-cell">
+                  <div>${group.label}</div>
+                  <div class="month-util">${renderPercent(monthPercents[idx])}</div>
+                </div>
+              </th>
+            `).join('')}
+          </tr>
+          <tr class="head-week">
             ${weeks.map(w => `<th>${formatWeekLabel(w)}</th>`).join('')}
           </tr>
         </thead>

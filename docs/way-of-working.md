@@ -13,6 +13,7 @@ This document defines how work is captured, tracked, and documented in Pussla fo
 - Stories, implementation tasks, and ongoing to-do items are tracked in Backlog.md.
 - Task creation, status updates, and completion follow the Backlog MCP workflow.
 - Backlog tracks delivery commitments and execution state.
+- When committing work done for a Backlog task, include a reference to the task in the commit message (for example: `Implemented task-3`).
 
 ### `docs/` - Documentation and Design Decisions
 - Architecture and design decisions are documented in `docs/`.

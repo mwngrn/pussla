@@ -1,10 +1,11 @@
 ---
 id: task-1
 title: Month header in dashboard
-status: To Do
-assignee: []
+status: Done
+assignee:
+  - codex
 created_date: '2026-02-22 17:45'
-updated_date: '2026-02-22 18:08'
+updated_date: '2026-02-22 18:21'
 labels:
   - dashboard
   - ui
@@ -27,16 +28,16 @@ Scope:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dashboard table renders a top year header row above month and week headers.
-- [ ] #2 Dashboard table renders a month header row between year and week headers.
-- [ ] #3 Year headers span exactly the number of week columns that belong to that year.
-- [ ] #4 Month headers span exactly the number of week columns that belong to that month within each year.
-- [ ] #5 Month labels show month only (for example `Jan`, `Feb`) without year.
+- [x] #1 Dashboard table renders a top year header row above month and week headers.
+- [x] #2 Dashboard table renders a month header row between year and week headers.
+- [x] #3 Year headers span exactly the number of week columns that belong to that year.
+- [x] #4 Month headers span exactly the number of week columns that belong to that month within each year.
+- [x] #5 Month labels show month only (for example `Jan`, `Feb`) without year.
 
-- [ ] #6 Month headers also show the allocation percentage for that month group.
-- [ ] #7 Existing week-level header and heatmap data rendering remain intact.
+- [x] #6 Month headers also show the allocation percentage for that month group.
+- [x] #7 Existing week-level header and heatmap data rendering remain intact.
 
-- [ ] #8 Behavior is covered by tests for year/month grouping logic including year boundary cases and monthly header percentage rendering.
+- [x] #8 Behavior is covered by tests for year/month grouping logic including year boundary cases and monthly header percentage rendering.
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -49,3 +50,19 @@ Scope:
 5. Render three-row table headers: row 1 years, row 2 months (month name + month allocation %), row 3 individual week labels.
 6. Add/update tests for grouping logic, year boundary behavior, and monthly header percentage rendering.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Started implementation on 2026-02-22: adding 3-row header (year/month/week) and month allocation percentage in month header.
+
+Implemented grouped calendar headers in `src/dashboard/index.html`: year row, month row, week row.
+
+Added month allocation percentage display in month headers, computed from currently displayed users/weeks.
+
+Added shared grouping/aggregation utility `src/dashboard/header_groups.js`.
+
+Added tests in `tests/test_header_groups.js` covering year/month grouping across boundaries and monthly percentage aggregation.
+
+Verification: `node --test tests/test_week_format.js tests/test_header_groups.js` passed; `python -m unittest discover -s tests -p 'test_*.py'` passed (3 tests).
+<!-- SECTION:NOTES:END -->

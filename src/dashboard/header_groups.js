@@ -85,9 +85,30 @@ function calculateMonthAllocationPercentages({ weeks, users, monthGroups }) {
   });
 }
 
+function calculateWeekAllocationPercentages({ weeks, users }) {
+  return weeks.map((weekKey, idx) => {
+    if (!users.length) return 0;
+    let totalLoad = 0;
+    let slotCount = 0;
+
+    for (const user of users) {
+      const stats = Array.isArray(user.weekly_stats) ? user.weekly_stats : [];
+      const slot = stats[idx];
+      if (!slot || slot.week !== weekKey) continue;
+      const load = typeof slot.total_load === "number" ? slot.total_load : 0;
+      totalLoad += load;
+      slotCount += 1;
+    }
+
+    if (!slotCount) return 0;
+    return Math.round((totalLoad / slotCount) * 10) / 10;
+  });
+}
+
 if (typeof window !== "undefined") {
   window.buildCalendarGroups = buildCalendarGroups;
   window.calculateMonthAllocationPercentages = calculateMonthAllocationPercentages;
+  window.calculateWeekAllocationPercentages = calculateWeekAllocationPercentages;
 }
 
 if (typeof module !== "undefined" && module.exports) {
@@ -96,5 +117,6 @@ if (typeof module !== "undefined" && module.exports) {
     isoWeekStartDate,
     buildCalendarGroups,
     calculateMonthAllocationPercentages,
+    calculateWeekAllocationPercentages,
   };
 }

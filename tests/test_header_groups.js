@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const {
   buildCalendarGroups,
   calculateMonthAllocationPercentages,
+  calculateWeekAllocationPercentages,
 } = require('../src/dashboard/header_groups');
 
 test('buildCalendarGroups groups years and months across ISO year boundaries', () => {
@@ -43,4 +44,27 @@ test('calculateMonthAllocationPercentages computes averages per month group', ()
 
   const percents = calculateMonthAllocationPercentages({ weeks, users, monthGroups });
   assert.deepEqual(percents, [75, 50]);
+});
+
+test('calculateWeekAllocationPercentages computes averages per week column', () => {
+  const weeks = ['2026-W04', '2026-W05', '2026-W09'];
+  const users = [
+    {
+      weekly_stats: [
+        { week: '2026-W04', total_load: 100 },
+        { week: '2026-W05', total_load: 0 },
+        { week: '2026-W09', total_load: 50 },
+      ],
+    },
+    {
+      weekly_stats: [
+        { week: '2026-W04', total_load: 80 },
+        { week: '2026-W05', total_load: 100 },
+        { week: '2026-W09', total_load: 60 },
+      ],
+    },
+  ];
+
+  const percents = calculateWeekAllocationPercentages({ weeks, users });
+  assert.deepEqual(percents, [90, 50, 55]);
 });

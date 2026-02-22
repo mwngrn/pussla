@@ -127,6 +127,16 @@
       font-size: 0.72rem;
       font-weight: 600;
     }
+    tfoot td {
+      background: #f0f4f8;
+      font-weight: 700;
+      color: #385061;
+      border-top: 2px solid var(--line);
+    }
+    td.footer-label {
+      text-align: left;
+      min-width: 220px;
+    }
 
     .name { font-weight: 600; }
     .role { color: var(--muted); font-size: 0.78rem; }
@@ -230,11 +240,14 @@
 
       const weeks = dashboardData.weeks;
       const { yearGroups, monthGroups } = buildCalendarGroups(weeks);
+      // Monthly percentages are the average total_load across displayed user-week slots per month group.
       const monthPercents = calculateMonthAllocationPercentages({
         weeks,
         users,
         monthGroups,
       });
+      // Weekly footer percentages are the average total_load across displayed users per week column.
+      const weekPercents = calculateWeekAllocationPercentages({ weeks, users });
       const renderPercent = (value) => `${Number(value).toFixed(1).replace(/\.0$/, "")}%`;
       const head = `
         <thead>
@@ -273,7 +286,16 @@
         return `<tr><td>${person}</td>${cells}</tr>`;
       }).join('');
 
-      heatmap.innerHTML = `${head}<tbody>${body}</tbody>`;
+      const foot = `
+        <tfoot>
+          <tr>
+            <td class="footer-label">Veckobeläggning</td>
+            ${weekPercents.map(value => `<td>${renderPercent(value)}</td>`).join('')}
+          </tr>
+        </tfoot>
+      `;
+
+      heatmap.innerHTML = `${head}<tbody>${body}</tbody>${foot}`;
 
       heatmap.querySelectorAll('.cell').forEach(el => {
         el.addEventListener('click', () => {

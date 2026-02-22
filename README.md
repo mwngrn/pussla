@@ -24,19 +24,19 @@ Welcome to **Pussla** – our internal "Planning-as-Code" system. We built this 
 
 Pussla is built on a decoupled architecture to ensure **Privacy by Design**.
 
-### 1. The Identity Layer (`/identity/`)
+### 1. The Identity Layer (`tst-data/identity/`)
 *Contains PII (Personally Identifiable Information).*
 This folder is restricted. It maps an anonymous `alias` to a real human being.
 * **Format:** Markdown with YAML Frontmatter.
-* **Example:** `identity/FishCatcher.md` contains "Erik Andersson".
+* **Example:** `tst-data/identity/FishCatcher.md` contains "Erik Andersson".
 
-### 2. The Allocation Layer (`/allocations/`)
+### 2. The Allocation Layer (`tst-data/planning/allocations/`)
 *The "AI-Safe" zone.*
 This is where the actual planning happens. It uses only `alias` values, meaning you can run AI analysis on this folder without exposing names to third-party models.
 * **Format:** YAML.
 * **Granularity:** Weekly slots, aggregated into months and quarters.
 
-### 3. The Project Layer (`/projects/`)
+### 3. The Project Layer (`tst-data/planning/projects/`)
 *Project context without PII.*
 This folder stores project metadata and narrative context using YAML frontmatter + Markdown body.
 * **Format:** Markdown with YAML Frontmatter.
@@ -47,13 +47,13 @@ This folder stores project metadata and narrative context using YAML frontmatter
 ## 🛠 Getting Started
 
 ### 1. Find your piece
-To see your own allocation, look for your alias in the `/allocations/` folder.
+To see your own allocation, look for your alias in `tst-data/planning/allocations/`.
 > *Obs! Glöm inte att kolla så du inte är överbokad.* (Note: Don't forget to check that you aren't overbooked.)
 
 ### 2. Making changes
 1. Create a new branch: `git checkout -b feature/update-plan-q3`.
 2. Edit the relevant `.yaml` or `.md` file.
-3. Commit and push: `git commit -m "Allokera FishCatcher till Project X"`.
+3. If the change is tied to a Backlog task, reference it in the commit message (for example: `git commit -m "Implemented task-3: update allocation logic"`).
 4. Open a Pull Request for the Resource Manager to review.
 
 ### 3. Validation (The "Linter")
@@ -74,14 +74,14 @@ While the data lives in text files, we view it through the **Pussla Dashboard**:
 You can run the dashboard as a local web GUI, similar to `backlog.md`, without deploying to any web server.
 
 1. Start the local server:
-   `python src/dashboard/run_dashboard.py`
+   `python3 src/dashboard/run_dashboard.py`
 2. Open:
    `http://127.0.0.1:8080`
 
 Optional flags:
 * `--port 8090`
-* `--data-dir /path/to/data-root` (expects `planing/` and `identity/` under that folder)
-* `--planning-dir tst-data/planing`
+* `--data-dir /path/to/data-root` (expects `planning/` and `identity/` under that folder; legacy `planing/` is also supported)
+* `--planning-dir tst-data/planning`
 * `--identity-dir tst-data/identity`
 
 ---
@@ -89,20 +89,20 @@ Optional flags:
 ## 🧪 Sample Data Layout
 
 For testing and AI-safe sharing:
-* Shareable folder: `tst-data/planing/`
-* Public planning data: `tst-data/planing/allocations/` and `tst-data/planing/projects/`
+* Shareable folder: `tst-data/planning/`
+* Public planning data: `tst-data/planning/allocations/` and `tst-data/planning/projects/`
 * Private identity mapping (not shared): `tst-data/identity/`
 
 ---
 
 ## 🤝 Support
-Need help fitting the pieces together? Take a look in the project Wiki or contact the Pussla maintainer.  
+Need help fitting the pieces together? See `docs/` and the design decisions there, or contact the Pussla maintainer.
 
 ---
 
 ## ♥️ Contributing 
-- Why is something done in a specific way - see [[docs/design decisions/]]. 
-- Requirements are in Sphinx-Needs format in [[./reqs]].
+- Why is something done in a specific way: see `docs/design decisions/`.
+- Requirements are in Sphinx-needs format in `reqs/`.
 - Way of Working (requirements, backlog, docs responsibilities) is defined in `docs/way-of-working.md`.
 
 

@@ -1,3 +1,8 @@
+# Way of Working (WoW):
+# - This file is the source of truth for requirements using Sphinx-needs.
+# - Stories and implementation tasks are tracked in Backlog.md (`backlog/`).
+# - Broader documentation and design decisions live in `docs/`.
+
 needs_content = """
 .. req:: Git-based planning
    :id: REQ_PUSSLA_001

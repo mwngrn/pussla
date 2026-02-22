@@ -27,3 +27,12 @@ You MUST read the overview resource to understand the complete workflow. The inf
 </CRITICAL_INSTRUCTION>
 
 <!-- BACKLOG.MD MCP GUIDELINES END -->
+
+## Way of Working (WoW)
+
+Canonical WoW document: `docs/way-of-working.md`.
+
+- Requirements are added and tracked with Sphinx-needs in `reqs/`.
+- Stories, to-do items, and implementation work are tracked in Backlog.md in `backlog/`.
+- Documentation and design decisions are maintained in `docs/`.
+- `README.md` stays high-level and links to deeper documentation.

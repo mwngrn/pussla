@@ -103,6 +103,7 @@ Need help fitting the pieces together? Take a look in the project Wiki or contac
 ## ♥️ Contributing 
 - Why is something done in a specific way - see [[docs/design decisions/]]. 
 - Requirements are in Sphinx-Needs format in [[./reqs]].
+- Way of Working (requirements, backlog, docs responsibilities) is defined in `docs/way-of-working.md`.
 
 
 **"Nu kör vi!"** (Let's go!)

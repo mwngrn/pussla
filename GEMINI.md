@@ -4,6 +4,13 @@ This document serves as the "System Prompt" and context for Gemini when assistin
 
 ---
 
+## Way of Working (WoW)
+- Canonical workflow document: `docs/way-of-working.md`.
+- Requirements are added and tracked with Sphinx-needs in `reqs/`.
+- Stories, to-do work, and implementation tracking are done in Backlog.md under `backlog/`.
+- Documentation and design decisions are written and maintained in `docs/`.
+- `README.md` is the high-level overview and points to deeper documentation.
+
 ## 🏗 Project Core Architecture
 You are helping build a resource planning tool for 100 people.
 - **Philosophy:** Planning-as-Code (Git-based, human-readable).

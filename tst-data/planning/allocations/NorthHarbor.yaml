@@ -1,11 +1,36 @@
 alias: NorthHarbor
 allocations:
-  - project: Project-Saga
-    weeks: ["2026-W09", "2026-W10", "2026-W11", "2026-W12"]
-    load: 60
-  - project: Project-Saga
-    weeks: ["2026-W13", "2026-W14", "2026-W15"]
-    load: 80
-  - project: Mentoring
-    weeks: ["2026-W16", "2026-W17"]
-    load: 30
+- project: Project-Saga
+  weeks:
+  - 2026-W09
+  - 2026-W10
+  - 2026-W11
+  - 2026-W12
+  load: 60
+- project: Project-Saga
+  weeks:
+  - 2026-W13
+  - 2026-W14
+  - 2026-W15
+  load: 80
+- project: Mentoring
+  weeks:
+  - 2026-W16
+  - 2026-W17
+  load: 30
+- project: Project-Pine
+  weeks:
+  - 2026-W07
+  load: 90
+- project: Platform-Core
+  weeks:
+  - 2026-W05
+  load: 100
+- project: Internal-RnD
+  weeks:
+  - 2026-W06
+  load: 100
+- project: Project-Bridge
+  weeks:
+  - 2026-W08
+  load: 90

@@ -31,6 +31,7 @@ needs_content = """
    :tags: validation
 
    The system shall use a linter to warn when an individual's total allocation exceeds 100% for any time period.
+   Over-allocation warnings shall not block saving allocations.
 
 .. req:: PII leak protection
    :id: REQ_PUSSLA_005
@@ -58,7 +59,8 @@ needs_content = """
    :status: open
    :tags: ai, privacy, structure
 
-   Test and demo data shall be shareable via a single folder, `tst-data/planing/`, containing `allocations/` and `projects/`, while `tst-data/identity/` remains separate.
+   Test and demo data shall be shareable via a single folder, `tst-data/planning/`, containing `allocations/` and `projects/`, while `tst-data/identity/` remains separate.
+   Legacy path `tst-data/planing/` may be supported for backward compatibility.
 
 .. req:: Dashboard visualization
    :id: REQ_PUSSLA_007
@@ -73,5 +75,51 @@ needs_content = """
    :tags: structure
 
    It shall be possible to track future leads and possible assignments for a person in order to track what projects he/she might be going into. These shall be clearly separately identifiable from decided assignments and be possible to filter out.
+
+.. req:: Role and skill based staffing lookup
+   :id: REQ_PUSSLA_011
+   :status: open
+   :tags: staffing, data-model, matching
+
+   The system shall track each person's role and skills, and it shall be possible to identify available people for a project based on required role and skill.
+
+.. req:: Dashboard filter for past periods
+   :id: REQ_PUSSLA_012
+   :status: open
+   :tags: dashboard, ux, filtering
+
+   The dashboard shall allow users to hide or show past weeks and past months, so users can focus on the current week and future periods when planning.
+
+.. req:: Dashboard grouped calendar headers
+   :id: REQ_PUSSLA_013
+   :status: open
+   :tags: dashboard, ux, frontend
+
+   The dashboard shall show grouped headers with Year at the top, Month (without year) in the middle, and Week at the bottom.
+   Month headers shall also show allocation percentage for each month group.
+
+.. req:: Dashboard weekly footer summary
+   :id: REQ_PUSSLA_014
+   :status: open
+   :tags: dashboard, frontend, reporting
+
+   The dashboard shall show a footer row with allocation percentage per week column.
+   Footer values shall update when visible users/weeks change due to filters.
+
+.. req:: Dashboard week label format
+   :id: REQ_PUSSLA_015
+   :status: open
+   :tags: dashboard, frontend, formatting
+
+   The dashboard shall display week labels in `Www` format (for example `W01`) while keeping canonical storage/API keys in `YYYY-Www` format.
+
+.. req:: Dashboard editable weekly allocations
+   :id: REQ_PUSSLA_016
+   :status: open
+   :tags: dashboard, editing, api, data-write
+
+   The dashboard shall allow editing allocations for a selected person-week with support for multiple projects in the same week.
+   Saving shall require explicit user action in the GUI (Save), support cancel/discard, and persist changes to allocation YAML files.
+   Overbooking (>100%) is allowed and shall not block save.
 
 """

@@ -518,10 +518,6 @@
         return;
       }
 
-      if (!window.confirm('Spara ändringar för denna vecka?')) {
-        return;
-      }
-
       editorSave.disabled = true;
       try {
         const res = await fetch('/api/allocation/update', {

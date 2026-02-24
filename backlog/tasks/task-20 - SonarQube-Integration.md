@@ -2,8 +2,9 @@
 id: TASK-20
 title: SonarQube Integration
 status: To Do
-assignee: ["Mathias"]
+assignee: []
 created_date: '2026-02-24 10:00'
+updated_date: '2026-02-24 07:51'
 labels:
   - Quality
   - CI/CD

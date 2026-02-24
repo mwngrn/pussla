@@ -25,7 +25,34 @@ ensure_python_package() {
   fi
 }
 
+ensure_system_dependencies() {
+  if ! command -v apt-get >/dev/null 2>&1; then
+    return
+  fi
+
+  local missing_pkgs=()
+  local required_pkgs=("python3-venv" "libpango-1.0-0" "libharfbuzz0b" "libpangoft2-1.0-0" "libpangocairo-1.0-0")
+
+  for pkg in "${required_pkgs[@]}"; do
+    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+      missing_pkgs+=("$pkg")
+    fi
+  done
+
+  if [ ${#missing_pkgs[@]} -gt 0 ]; then
+    log "Installing missing system dependencies: ${missing_pkgs[*]}..."
+    local sudo_cmd=""
+    if [ "$(id -u)" -ne 0 ]; then
+      sudo_cmd="sudo"
+    fi
+    $sudo_cmd apt-get update
+    $sudo_cmd apt-get install -y "${missing_pkgs[@]}"
+  fi
+}
+
 log "Setting up Sphinx-needs development environment..."
+
+ensure_system_dependencies
 
 if ! command -v python3 >/dev/null 2>&1; then
   log "Error: python3 is required but was not found."

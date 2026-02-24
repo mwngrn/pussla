@@ -9,7 +9,8 @@
 project = "pussla"
 copyright = "2026, Mathias Wennergren"
 author = "Mathias Wennergren"
-release = "1.0"
+release = "0.1"
+version = "0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

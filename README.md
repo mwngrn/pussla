@@ -105,5 +105,7 @@ Need help fitting the pieces together? See `docs/` and the design decisions ther
 - Requirements are in Sphinx-needs format in `reqs/`.
 - Way of Working (requirements, backlog, docs responsibilities) is defined in `docs/way-of-working.md`.
 
+### Compiling the requirements 
+Run the `setup-dev-env.sh` to install sphinx-needs and need libraries. To build HTML, go to reqs folder and run `m̀ake html`, to build pdf - go to the `source` subfolder and `sphinx-build -M simplepdf . _build`.  
 
 **"Nu kör vi!"** (Let's go!)

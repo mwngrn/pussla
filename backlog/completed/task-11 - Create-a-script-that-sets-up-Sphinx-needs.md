@@ -1,10 +1,10 @@
 ---
 id: task-11
 title: Create a script that sets up Sphinx-needs
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-24 07:47'
-updated_date: '2026-02-24 12:02'
+updated_date: '2026-02-24 14:33'
 labels: []
 dependencies: []
 ---
@@ -19,6 +19,12 @@ Create a script that sets up Sphinx-needs by setting up:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Script is running properly
+- [x] #1 Script is running properly
 - [x] #2 A requirements.txt is available in the repo
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Barebone debian VPS was a bit of a challenge. AI fixed the code much better than me :)
+<!-- SECTION:NOTES:END -->

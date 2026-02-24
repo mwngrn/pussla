@@ -25,4 +25,4 @@ allocations:
 - project: Project-Bridge
   weeks:
   - 2026-W07
-  load: 80
+  load: 60

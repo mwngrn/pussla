@@ -15,7 +15,7 @@ import yaml
 
 ISO_WEEK_RE = re.compile(r"^\d{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-PHONE_RE = re.compile(r"\+?\d[\d\s().-]{7,}\d")
+PHONE_RE = re.compile(r"\+?\d[\d \t().-]{7,}\d")
 
 
 def read_yaml(path: Path) -> Any:

@@ -35,7 +35,13 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self.wfile.write(payload)
             return
 
-        if parsed.path == "/":
+        # For the React SPA: any non-asset path that doesn't match a file
+        # falls back to index.html so client-side routing works.
+        if parsed.path == "/" or (
+            not parsed.path.startswith("/assets/")
+            and not parsed.path.startswith("/api/")
+            and "." not in Path(parsed.path).name
+        ):
             self.path = "/index.html"
 
         super().do_GET()
@@ -116,8 +122,21 @@ def _resolve_planning_dir(data_dir: Path, planning_override: str | None) -> Path
     return legacy
 
 
+def _resolve_static_dir() -> Path:
+    """Return the directory to serve static files from.
+
+    Prefers the compiled React frontend (src/frontend/dist/) when present,
+    and falls back to the legacy HTML dashboard in the same directory.
+    """
+    here = Path(__file__).resolve().parent
+    react_dist = here.parent / "frontend" / "dist"
+    if (react_dist / "index.html").exists():
+        return react_dist
+    return here
+
+
 def run_server(host: str, port: int, planning_dir: Path, identity_dir: Path) -> None:
-    static_dir = Path(__file__).resolve().parent
+    static_dir = _resolve_static_dir()
 
     def handler(*args, **kwargs):
         return DashboardHandler(*args, static_dir=static_dir, **kwargs)
@@ -139,6 +158,7 @@ def run_server(host: str, port: int, planning_dir: Path, identity_dir: Path) -> 
     resolved_port = server.server_address[1]
     url = f"http://{host}:{resolved_port}"
     print(f"Pussla dashboard running at {url}")
+    print(f"Frontend:      {static_dir}")
     print(f"Planning data: {planning_dir}")
     print(f"Identity data: {identity_dir}")
     print("Press Ctrl+C to stop.")

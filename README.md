@@ -80,6 +80,7 @@ You can run the dashboard as a local web GUI, similar to `backlog.md`, without d
 
 Optional flags:
 * `--port 8090`
+* `--port 0` (auto-select a free local port)
 * `--data-dir /path/to/data-root` (expects `planning/` and `identity/` under that folder; legacy `planing/` is also supported)
 * `--planning-dir tst-data/planning`
 * `--identity-dir tst-data/identity`

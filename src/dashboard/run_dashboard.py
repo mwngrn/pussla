@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -99,6 +100,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 
 class DashboardServer(ThreadingHTTPServer):
+    allow_reuse_address = True
     planning_dir: Path
     identity_dir: Path
 
@@ -120,11 +122,22 @@ def run_server(host: str, port: int, planning_dir: Path, identity_dir: Path) -> 
     def handler(*args, **kwargs):
         return DashboardHandler(*args, static_dir=static_dir, **kwargs)
 
-    server = DashboardServer((host, port), handler)
+    try:
+        server = DashboardServer((host, port), handler)
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE:
+            raise SystemExit(
+                f"Cannot start dashboard: {host}:{port} is already in use. "
+                "Stop the existing process or choose another port with --port "
+                "(tip: use --port 0 to auto-select a free port)."
+            ) from exc
+        raise
+
     server.planning_dir = planning_dir
     server.identity_dir = identity_dir
 
-    url = f"http://{host}:{port}"
+    resolved_port = server.server_address[1]
+    url = f"http://{host}:{resolved_port}"
     print(f"Pussla dashboard running at {url}")
     print(f"Planning data: {planning_dir}")
     print(f"Identity data: {identity_dir}")

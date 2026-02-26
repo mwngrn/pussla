@@ -210,3 +210,41 @@ __marimo__/
 
 # Generated dashboard export
 src/dashboard/pussla_data.json
+
+# React ignores for my frontend in your backend ;)
+# Dependency mappar
+node_modules/
+jspm_packages/
+
+# Byggfiler
+dist/
+build/
+.next/
+out/
+
+# Miljövariabler (Säkerhet!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Loggfiler
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testrapporter
+coverage/
+__snapshots__/
+
+# Editor & System
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

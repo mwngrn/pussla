@@ -85,6 +85,12 @@ Optional flags:
 * `--planning-dir tst-data/planning`
 * `--identity-dir tst-data/identity`
 
+
+### Your frontend in my backend ;) 
+To use the richer frontend developed in react, go to the .src/frontend folder and: 
+- npm install 
+- npm run build
+
 ---
 
 ## 🧪 Sample Data Layout

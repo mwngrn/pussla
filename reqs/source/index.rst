@@ -27,4 +27,5 @@ Welcome to **Pussla** – a "Planning-as-Code" system. We built this because hum
    :caption: Contents:
 
    requirements
+   project-management
    tests

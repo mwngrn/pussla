@@ -48,6 +48,150 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
    Covered by ``tests/test_aggregation.py``.
    Verifies helper behavior used for planning aggregation outputs.
 
+.. test:: Project view grouped header rendering
+   :id: TEST_PUSSLA_006
+   :status: open
+   :tags: project-management, frontend, unit
+   :links: REQ_PUSSLA_024
+
+   Planned coverage in ``tests/test_project_view_headers.js``.
+   Verifies grouped Year/Month/Week headers in project planning view and consistency with dashboard grouping logic.
+
+.. test:: Project view person-week planned hours cells
+   :id: TEST_PUSSLA_007
+   :status: open
+   :tags: project-management, frontend, unit
+   :links: REQ_PUSSLA_025
+
+   Planned coverage in ``tests/test_project_view_hours_grid.js``.
+   Verifies person rows, week columns, and hour values rendered per cell for selected project.
+
+.. test:: Project view weekly footer totals
+   :id: TEST_PUSSLA_008
+   :status: open
+   :tags: project-management, frontend, unit
+   :links: REQ_PUSSLA_026
+
+   Planned coverage in ``tests/test_project_view_footer_totals.js``.
+   Verifies footer totals per week and recomputation when filters change visible rows/periods.
+
+.. test:: Project summary panel aggregates
+   :id: TEST_PUSSLA_009
+   :status: open
+   :tags: project-management, frontend, unit
+   :links: REQ_PUSSLA_027
+
+   Planned coverage in ``tests/test_project_summary_panel.js``.
+   Verifies project summary metrics: allocated people count, start/end boundaries, and total planned hours.
+
+.. test:: Milestone CRUD and date-based rendering
+   :id: TEST_PUSSLA_010
+   :status: open
+   :tags: project-management, milestones, integration
+   :links: REQ_PUSSLA_028
+
+   Planned coverage in ``tests/test_milestone_crud.py``.
+   Verifies add/edit/remove flows and timeline rendering for date-based milestones.
+
+.. test:: Milestone date validation and ordering
+   :id: TEST_PUSSLA_011
+   :status: open
+   :tags: project-management, milestones, validation
+   :links: REQ_PUSSLA_029
+
+   Planned coverage in ``tests/test_milestone_validation.py``.
+   Verifies invalid milestone dates are rejected and valid milestones are presented in chronological order.
+
+.. test:: Milestone consistency across views
+   :id: TEST_PUSSLA_012
+   :status: open
+   :tags: project-management, milestones, integration
+   :links: REQ_PUSSLA_030
+
+   Planned coverage in ``tests/test_milestone_view_consistency.py``.
+   Verifies milestone updates appear consistently in project detail and timeline overview after save.
+
+.. test:: Project date range derivation and override behavior
+   :id: TEST_PUSSLA_013
+   :status: open
+   :tags: project-management, timeline, unit
+   :links: REQ_PUSSLA_031
+
+   Planned coverage in ``tests/test_project_date_range.py``.
+   Verifies derived project boundaries from assignments/milestones and explicit metadata override behavior.
+
+.. test:: Hours-to-cost rollup calculations
+   :id: TEST_PUSSLA_014
+   :status: open
+   :tags: project-management, finance, unit
+   :links: REQ_PUSSLA_032, REQ_PUSSLA_020
+
+   Planned coverage in ``tests/test_project_cost_rollups.py``.
+   Verifies weekly and total cost rollups derived from planned hours and configured rates.
+
+.. test:: People profile title-role and skill schema
+   :id: TEST_PUSSLA_015
+   :status: open
+   :tags: staffing, data-model, validation
+   :links: REQ_PUSSLA_011, REQ_PUSSLA_033
+
+   Planned coverage in ``tests/test_people_skill_profile_schema.py``.
+   Verifies title/role and normalized skill terms are parsed and validated for staffing matching.
+
+.. test:: Staffing request period normalization
+   :id: TEST_PUSSLA_016
+   :status: open
+   :tags: staffing, matching, unit
+   :links: REQ_PUSSLA_034
+
+   Planned coverage in ``tests/test_staffing_request_period.py``.
+   Verifies date-based requests such as ``4 months starting in August`` are normalized to a planning week range.
+
+.. test:: Staffing availability over full requested period
+   :id: TEST_PUSSLA_017
+   :status: open
+   :tags: staffing, matching, validation
+   :links: REQ_PUSSLA_035
+
+   Planned coverage in ``tests/test_staffing_availability_window.py``.
+   Verifies candidate availability checks include the full requested period and capacity constraints.
+
+.. test:: Candidate ranking and explanation output
+   :id: TEST_PUSSLA_018
+   :status: open
+   :tags: staffing, matching, explainability
+   :links: REQ_PUSSLA_036
+
+   Planned coverage in ``tests/test_staffing_candidate_ranking.py``.
+   Verifies ranked candidate output and explanation fields for role fit, skill fit, and availability fit.
+
+.. test:: External agent staffing request parse and confirmation gate
+   :id: TEST_PUSSLA_019
+   :status: open
+   :tags: staffing, workflow, integration
+   :links: REQ_PUSSLA_037
+
+   Planned coverage in ``tests/test_external_staffing_request.py``.
+   Verifies staffing intent is transformed into structured constraints and requires explicit confirmation before booking.
+
+.. test:: Staffing booking assignment states and traceability
+   :id: TEST_PUSSLA_020
+   :status: open
+   :tags: staffing, workflow, integration
+   :links: REQ_PUSSLA_038
+
+   Planned coverage in ``tests/test_staffing_booking_flow.py``.
+   Verifies booking creates tentative/committed assignments and stores linkage to originating staffing request.
+
+.. test:: Staffing fallback and conflict behavior
+   :id: TEST_PUSSLA_021
+   :status: open
+   :tags: staffing, workflow, validation
+   :links: REQ_PUSSLA_039
+
+   Planned coverage in ``tests/test_staffing_conflicts.py``.
+   Verifies fallback recommendations when no full match exists and conflict handling behavior during booking.
+
 
 Test-to-Requirement Matrix
 ==========================

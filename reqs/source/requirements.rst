@@ -29,8 +29,9 @@ This page is the source of truth for formal requirements (Sphinx-needs).
    :status: open
    :tags: validation
 
-   The system shall use a linter to warn when an individual's total allocation exceeds 100% for any time period.
-   Over-allocation warnings shall not block saving allocations.
+   The system shall use a linter to warn when an individual's total planned hours exceed weekly capacity hours for any time period.
+   The system shall also expose derived over-allocation percentage (greater than 100%) in dashboards and reports.
+   Over-allocation warnings shall not block saving planning data.
 
 .. req:: PII leak protection
    :id: REQ_PUSSLA_005
@@ -80,7 +81,8 @@ This page is the source of truth for formal requirements (Sphinx-needs).
    :status: open
    :tags: staffing, data-model, matching
 
-   The system shall track each person's role and skills, and it shall be possible to identify available people for a project based on required role and skill.
+   The system shall track each person's title/role and skills, including skill keywords used for matching (for example C++, Python, Rust, Zephyr).
+   It shall be possible to identify available people for a project based on required title/role and required skills.
 
 .. req:: Dashboard filter for past periods
    :id: REQ_PUSSLA_012
@@ -112,14 +114,15 @@ This page is the source of truth for formal requirements (Sphinx-needs).
 
    The dashboard shall display week labels in `Www` format (for example `W01`) while keeping canonical storage/API keys in `YYYY-Www` format.
 
-.. req:: Dashboard editable weekly allocations
+.. req:: Dashboard editable weekly planning
    :id: REQ_PUSSLA_016
    :status: implemented
    :tags: dashboard, editing, api, data-write
 
-   The dashboard shall allow editing allocations for a selected person-week with support for multiple projects in the same week.
+   The dashboard shall allow editing weekly planning for a selected person-week with support for multiple projects in the same week.
+   The dashboard shall support editing planned hours and show derived allocation percentages.
    Saving shall require explicit user action in the GUI (Save), support cancel/discard, and persist changes to allocation YAML files.
-   Overbooking (>100%) is allowed and shall not block save.
+   Overbooking (sum of planned hours greater than capacity hours, equivalent to derived percentage greater than 100%) is allowed and shall not block save.
 
 
 Requirement Status Matrix

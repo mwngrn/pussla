@@ -6,19 +6,38 @@ allocations:
   - 2026-W10
   - 2026-W11
   - 2026-W12
+  planned_hours: 26.0
+  capacity_hours: 40.0
   load: 65
+  state: committed
 - project: Project-Bridge
   weeks:
   - 2026-W13
   - 2026-W14
   - 2026-W15
+  planned_hours: 34.0
+  capacity_hours: 40.0
   load: 85
+  state: committed
 - project: Training
   weeks:
   - 2026-W16
   - 2026-W17
+  planned_hours: 14.0
+  capacity_hours: 40.0
   load: 35
+  state: committed
 - project: Ops-Rotation
   weeks:
   - 2026-W09
+  planned_hours: 8.0
+  capacity_hours: 40.0
   load: 20
+  state: committed
+- project: Project-DeathSkull
+  weeks:
+  - 2026-W06
+  planned_hours: 15.0
+  capacity_hours: 40.0
+  load: 38
+  state: committed

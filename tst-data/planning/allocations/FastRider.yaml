@@ -3,22 +3,46 @@ allocations:
 - project: Project-Neon
   weeks:
   - 2026-W09
-  - 2026-W10
-  - 2026-W11
   - 2026-W12
+  planned_hours: 8.0
+  capacity_hours: 40.0
   load: 20
+  state: committed
 - project: Project-Orbit
   weeks:
   - 2026-W13
   - 2026-W14
   - 2026-W15
+  planned_hours: 4.0
+  capacity_hours: 40.0
   load: 10
+  state: committed
 - project: Internal-Enablement
   weeks:
   - 2026-W16
   - 2026-W17
+  planned_hours: 4.0
+  capacity_hours: 40.0
   load: 10
+  state: committed
 - project: Mentoring
   weeks:
   - 2026-W05
+  planned_hours: 20.0
+  capacity_hours: 40.0
   load: 50
+  state: committed
+- project: Project-Neon
+  weeks:
+  - 2026-W10
+  planned_hours: 18.0
+  capacity_hours: 40.0
+  load: 45
+  state: committed
+- project: Project-Neon
+  weeks:
+  - 2026-W11
+  planned_hours: 13.0
+  capacity_hours: 40.0
+  load: 32
+  state: committed

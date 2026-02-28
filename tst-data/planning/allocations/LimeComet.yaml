@@ -4,25 +4,54 @@ allocations:
   weeks:
   - 2026-W09
   - 2026-W10
+  planned_hours: 22.0
+  capacity_hours: 40.0
   load: 55
+  state: committed
 - project: Project-Quartz
   weeks:
   - 2026-W11
   - 2026-W12
   - 2026-W13
   - 2026-W14
+  planned_hours: 30.0
+  capacity_hours: 40.0
   load: 75
+  state: committed
 - project: Project-Mercury
   weeks:
   - 2026-W15
   - 2026-W16
   - 2026-W17
+  planned_hours: 28.0
+  capacity_hours: 40.0
   load: 70
+  state: committed
 - project: Project-Bridge
   weeks:
   - 2026-W07
+  planned_hours: 20.0
+  capacity_hours: 40.0
   load: 50
+  state: committed
 - project: Project-DeathSkull
   weeks:
   - 2026-W09
+  planned_hours: 18.0
+  capacity_hours: 40.0
   load: 45
+  state: committed
+- project: Project-DeathSkull
+  weeks:
+  - 2026-W08
+  planned_hours: 20.0
+  capacity_hours: 40.0
+  load: 50
+  state: committed
+- project: Project-DeathSkull
+  weeks:
+  - 2026-W10
+  planned_hours: 10.0
+  capacity_hours: 40.0
+  load: 25
+  state: tentative

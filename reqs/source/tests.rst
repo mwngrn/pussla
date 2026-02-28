@@ -21,14 +21,14 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
    Covered by ``tests/test_header_groups.js``.
    Verifies year/month grouping and percentage aggregation logic used by headers/footer.
 
-.. test:: Dashboard editable weekly allocations writeback
+.. test:: Dashboard editable weekly planning writeback
    :id: TEST_PUSSLA_003
    :status: passed
    :tags: dashboard, editing, api, unit
    :links: REQ_PUSSLA_016
 
    Covered by ``tests/test_dashboard_editing.py``.
-   Verifies multi-project week updates, YAML persistence behavior, and payload validation.
+   Verifies multi-project week updates, planned-hours persistence behavior, and payload validation.
 
 .. test:: Validation helpers for planning data format
    :id: TEST_PUSSLA_004
@@ -128,6 +128,42 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
 
    Planned coverage in ``tests/test_project_cost_rollups.py``.
    Verifies weekly and total cost rollups derived from planned hours and configured rates.
+
+.. test:: Percent-vs-hours representation policy
+   :id: TEST_PUSSLA_022
+   :status: passed
+   :tags: project-management, dashboard, frontend, unit
+   :links: REQ_PUSSLA_040, REQ_PUSSLA_018
+
+   Covered by ``tests/test_representation_policy.mjs``.
+   Verifies utilization-oriented views present derived percentages, while project-centric and time-entry editing flows use planned hours.
+
+.. test:: Canonical hours write/read compatibility
+   :id: TEST_PUSSLA_023
+   :status: passed
+   :tags: project-management, backend, migration, unit
+   :links: REQ_PUSSLA_017, REQ_PUSSLA_018, REQ_PUSSLA_022
+
+   Covered by ``tests/test_dashboard_editing.py`` and ``tests/test_project_management_backend.py``.
+   Verifies canonical hours persistence and backward-compatible read behavior for legacy percentage-based entries.
+
+.. test:: Project metadata updates for rate and milestones
+   :id: TEST_PUSSLA_024
+   :status: passed
+   :tags: project-management, milestones, finance, backend, unit
+   :links: REQ_PUSSLA_020, REQ_PUSSLA_028, REQ_PUSSLA_029, REQ_PUSSLA_031
+
+   Covered by ``tests/test_project_management_backend.py``.
+   Verifies project metadata write path for hourly rate, milestone ordering/validation, and date-range override fields.
+
+.. test:: Assignment state persistence in planning data
+   :id: TEST_PUSSLA_025
+   :status: passed
+   :tags: project-management, workflow, backend, unit
+   :links: REQ_PUSSLA_023
+
+   Covered by ``tests/test_project_management_backend.py``.
+   Verifies tentative/committed state is retained through read/write flow and exposed in dashboard data.
 
 .. test:: People profile title-role and skill schema
    :id: TEST_PUSSLA_015

@@ -8,7 +8,11 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from pussla_engine import build_dashboard_data, update_week_allocations
+from pussla_engine import (
+    build_dashboard_data,
+    update_project_metadata,
+    update_week_allocations,
+)
 
 
 class DashboardHandler(SimpleHTTPRequestHandler):
@@ -56,7 +60,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
-        if parsed.path != "/api/allocation/update":
+        normalized_path = parsed.path.rstrip("/") or "/"
+        if normalized_path not in {
+            "/api/allocation/update",
+            "/api/project/update",
+            "/api/projects/update",
+        }:
             self._send_json(404, {"error": "Not found"})
             return
 
@@ -81,16 +90,36 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._send_json(400, {"error": "JSON body must be an object"})
             return
 
-        alias = payload.get("alias")
-        week = payload.get("week")
-        allocations = payload.get("allocations")
+        if normalized_path == "/api/allocation/update":
+            alias = payload.get("alias")
+            week = payload.get("week")
+            allocations = payload.get("allocations")
+            try:
+                result = update_week_allocations(
+                    planning_dir=self.server.planning_dir,
+                    alias=alias,
+                    week=week,
+                    allocations=allocations,
+                )
+            except FileNotFoundError as exc:
+                self._send_json(404, {"error": str(exc)})
+                return
+            except ValueError as exc:
+                self._send_json(400, {"error": str(exc)})
+                return
+            except Exception:
+                self._send_json(500, {"error": "Failed to update allocation"})
+                return
+            self._send_json(200, {"ok": True, "updated": result})
+            return
 
+        project = payload.get("project")
+        updates = payload.get("updates")
         try:
-            result = update_week_allocations(
+            result = update_project_metadata(
                 planning_dir=self.server.planning_dir,
-                alias=alias,
-                week=week,
-                allocations=allocations,
+                project=project,
+                updates=updates,
             )
         except FileNotFoundError as exc:
             self._send_json(404, {"error": str(exc)})
@@ -99,7 +128,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             self._send_json(400, {"error": str(exc)})
             return
         except Exception:
-            self._send_json(500, {"error": "Failed to update allocation"})
+            self._send_json(500, {"error": "Failed to update project metadata"})
             return
 
         self._send_json(200, {"ok": True, "updated": result})

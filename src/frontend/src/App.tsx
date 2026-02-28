@@ -15,6 +15,7 @@ import { UtilizationPage } from "@/modules/planning/UtilizationPage";
 import { PeoplePage } from "@/modules/people/PeoplePage";
 import { ProjectsPage } from "@/modules/projects/ProjectsPage";
 import { AllocationsPage } from "@/modules/allocations/AllocationsPage";
+import { ProjectManagementPage } from "@/modules/project-management/ProjectManagementPage";
 import { SettingsPage } from "@/modules/settings/SettingsPage";
 import {
   GanttChartSquare,
@@ -22,6 +23,7 @@ import {
   Users,
   FolderOpen,
   CalendarDays,
+  FolderKanban,
   Settings,
   Menu,
   X,
@@ -124,6 +126,11 @@ function AppLayout({ children }: { children: ReactNode }) {
             <CalendarDays className="h-4 w-4" />,
             "Allocations"
           )}
+          {navLink(
+            "/project-management",
+            <FolderKanban className="h-4 w-4" />,
+            "Project Management"
+          )}
 
           <p className="px-3 pt-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
             System
@@ -219,6 +226,10 @@ export default function App() {
                 <Route path="/people" element={<PeoplePage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/allocations" element={<AllocationsPage />} />
+                <Route
+                  path="/project-management"
+                  element={<ProjectManagementPage />}
+                />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="*" element={<Navigate to="/utilization" replace />} />
               </Routes>

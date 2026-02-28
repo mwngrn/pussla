@@ -88,6 +88,39 @@ allocations: []
                     allocations=[{'project': 'X', 'load': -1}],
                 )
 
+    def test_update_week_allocations_supports_planned_hours(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            planning = Path(tmp) / 'planning'
+            alloc_dir = planning / 'allocations'
+            alloc_dir.mkdir(parents=True)
+            path = alloc_dir / 'alice.yaml'
+            path.write_text(
+                """
+alias: alice
+allocations: []
+""".lstrip(),
+                encoding='utf-8',
+            )
+
+            result = pussla_engine.update_week_allocations(
+                planning_dir=planning,
+                alias='alice',
+                week='2026-W04',
+                allocations=[
+                    {'project': 'Project-Hours', 'planned_hours': 16, 'capacity_hours': 40},
+                ],
+            )
+
+            self.assertEqual(result['total_planned_hours'], 16.0)
+            self.assertEqual(result['total_load'], 40)
+
+            data = yaml.safe_load(path.read_text(encoding='utf-8'))
+            entry = data['allocations'][0]
+            self.assertEqual(entry['project'], 'Project-Hours')
+            self.assertEqual(entry['planned_hours'], 16.0)
+            self.assertEqual(entry['capacity_hours'], 40.0)
+            self.assertEqual(entry['load'], 40)
+
 
 if __name__ == '__main__':
     unittest.main()

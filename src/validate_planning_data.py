@@ -16,6 +16,7 @@ import yaml
 ISO_WEEK_RE = re.compile(r"^\d{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"\+?\d[\d \t().-]{7,}\d")
+DEFAULT_CAPACITY_HOURS = 40.0
 
 
 def read_yaml(path: Path) -> Any:
@@ -53,9 +54,10 @@ def load_real_names(identity_dir: Path) -> list[str]:
     return names
 
 
-def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, dict[str, int]], set[str]]:
+def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, dict[str, float]], set[str]]:
     errors: list[str] = []
-    totals: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    totals: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    capacities: dict[str, dict[str, float]] = defaultdict(dict)
     referenced_projects: set[str] = set()
 
     for path in sorted(allocations_dir.glob("*.yaml")):
@@ -91,6 +93,8 @@ def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, di
             project = item.get("project")
             weeks = item.get("weeks")
             load = item.get("load")
+            planned_hours = item.get("planned_hours")
+            capacity_hours = item.get("capacity_hours")
 
             if not isinstance(project, str) or not project.strip():
                 errors.append(f"{location}: 'project' must be a non-empty string")
@@ -100,23 +104,67 @@ def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, di
             if not isinstance(weeks, list) or not weeks:
                 errors.append(f"{location}: 'weeks' must be a non-empty list")
                 weeks = []
-            if not isinstance(load, int):
-                errors.append(f"{location}: 'load' must be an integer")
+
+            if capacity_hours is None:
+                capacity = DEFAULT_CAPACITY_HOURS
+            elif isinstance(capacity_hours, (int, float)):
+                capacity = float(capacity_hours)
+            else:
+                errors.append(f"{location}: 'capacity_hours' must be a number")
                 continue
-            if load < 0 or load > 100:
-                errors.append(f"{location}: 'load' must be between 0 and 100")
+            if capacity <= 0:
+                errors.append(f"{location}: 'capacity_hours' must be greater than 0")
+                continue
+
+            if planned_hours is not None:
+                if not isinstance(planned_hours, (int, float)):
+                    errors.append(f"{location}: 'planned_hours' must be a number")
+                    continue
+                hours = float(planned_hours)
+                if hours < 0:
+                    errors.append(f"{location}: 'planned_hours' must be >= 0")
+                    continue
+
+                if load is not None:
+                    if not isinstance(load, int):
+                        errors.append(f"{location}: 'load' must be an integer when provided")
+                    else:
+                        expected_load = round((hours / capacity) * 100) if capacity > 0 else 0
+                        if abs(load - expected_load) > 1:
+                            errors.append(
+                                f"{location}: 'load' ({load}) is inconsistent with planned_hours/capacity_hours "
+                                f"(expected about {expected_load})"
+                            )
+            else:
+                if not isinstance(load, int):
+                    errors.append(f"{location}: either 'planned_hours' or integer 'load' is required")
+                    continue
+                if load < 0:
+                    errors.append(f"{location}: 'load' must be >= 0")
+                    continue
+                hours = (load / 100.0) * capacity
 
             for week in weeks:
                 if not isinstance(week, str) or not ISO_WEEK_RE.match(week):
                     errors.append(f"{location}: invalid ISO week '{week}' (expected YYYY-Www)")
                     continue
-                totals[alias][week] += load
+                if week in capacities[alias] and abs(capacities[alias][week] - capacity) > 0.001:
+                    errors.append(
+                        f"{location}: conflicting capacity_hours for alias '{alias}' week {week} "
+                        f"({capacities[alias][week]} vs {capacity})"
+                    )
+                    continue
+                capacities[alias][week] = capacity
+                totals[alias][week] += hours
 
     for alias, by_week in sorted(totals.items()):
-        for week, total in sorted(by_week.items()):
-            if total > 100:
+        for week, total_hours in sorted(by_week.items()):
+            capacity = capacities.get(alias, {}).get(week, DEFAULT_CAPACITY_HOURS)
+            if total_hours > capacity + 1e-9:
+                percent = round((total_hours / capacity) * 100, 1) if capacity > 0 else 0
                 errors.append(
-                    f"over-allocation: alias '{alias}' has total load {total} in week {week} (>100)"
+                    f"over-allocation: alias '{alias}' has total planned_hours {round(total_hours, 1)} "
+                    f"in week {week} (capacity {round(capacity, 1)}h, {percent}%)"
                 )
 
     return errors, totals, referenced_projects

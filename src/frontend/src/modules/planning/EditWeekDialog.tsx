@@ -20,7 +20,18 @@ import { Plus, Trash2 } from "lucide-react";
 
 interface EditRow {
   project: string;
-  load: string; // string for controlled input
+  hours: string; // string for controlled input
+}
+
+const DEFAULT_CAPACITY_HOURS = 40;
+
+function percentToHours(loadPercent: number, capacityHours: number): number {
+  return Math.round((loadPercent / 100) * capacityHours * 10) / 10;
+}
+
+function hoursToPercent(hours: number, capacityHours: number): number {
+  if (capacityHours <= 0) return 0;
+  return Math.round((hours / capacityHours) * 100);
 }
 
 interface Props {
@@ -42,6 +53,7 @@ export function EditWeekDialog({
   const [rows, setRows] = useState<EditRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const capacityHours = slot?.capacity_hours ?? DEFAULT_CAPACITY_HOURS;
 
   // Reset rows whenever the dialog opens with new data
   useEffect(() => {
@@ -50,16 +62,21 @@ export function EditWeekDialog({
         slot.projects.length > 0
           ? slot.projects.map((p) => ({
               project: p.project,
-              load: String(p.load),
+              hours: String(
+                typeof p.planned_hours === "number"
+                  ? p.planned_hours
+                  : percentToHours(p.load, capacityHours)
+              ),
             }))
-          : [{ project: "", load: "0" }]
+          : [{ project: "", hours: "0" }]
       );
       setError(null);
     }
-  }, [open, slot]);
+  }, [open, slot, capacityHours]);
 
   const projectOptions = dashboardData ? extractProjects(dashboardData) : [];
-  const total = rows.reduce((sum, r) => sum + (parseInt(r.load, 10) || 0), 0);
+  const totalHours = rows.reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
+  const totalPercent = Math.round((totalHours / capacityHours) * 100);
 
   const updateRow = (idx: number, field: keyof EditRow, value: string) => {
     setRows((prev) => {
@@ -70,32 +87,42 @@ export function EditWeekDialog({
   };
 
   const addRow = () =>
-    setRows((prev) => [...prev, { project: "", load: "0" }]);
+    setRows((prev) => [...prev, { project: "", hours: "0" }]);
 
   const removeRow = (idx: number) =>
     setRows((prev) => {
       const next = prev.filter((_, i) => i !== idx);
-      return next.length > 0 ? next : [{ project: "", load: "0" }];
+      return next.length > 0 ? next : [{ project: "", hours: "0" }];
     });
 
   const handleSave = async () => {
     if (!user || !slot) return;
     setError(null);
 
-    const allocations: Array<{ project: string; load: number }> = [];
+    const allocations: Array<{
+      project: string;
+      load: number;
+      planned_hours: number;
+      capacity_hours: number;
+    }> = [];
     for (const row of rows) {
       const project = row.project.trim();
-      const load = parseInt(row.load, 10);
-      if (!project && !row.load) continue;
+      const hours = Number(row.hours);
+      if (!project && !row.hours) continue;
       if (!project) {
         setError("Project name is required for each row.");
         return;
       }
-      if (isNaN(load) || load < 0) {
-        setError("Load must be a non-negative integer.");
+      if (!Number.isFinite(hours) || hours < 0) {
+        setError("Hours must be a non-negative number.");
         return;
       }
-      allocations.push({ project, load });
+      allocations.push({
+        project,
+        planned_hours: Math.round(hours * 10) / 10,
+        capacity_hours: capacityHours,
+        load: hoursToPercent(hours, capacityHours),
+      });
     }
 
     setSaving(true);
@@ -135,16 +162,16 @@ export function EditWeekDialog({
         {/* Total indicator */}
         <div
           className={`text-sm font-medium px-3 py-1.5 rounded-md inline-flex ${
-            total > 100
+            totalPercent > 100
               ? "bg-red-50 text-red-700"
-              : total >= 80
+              : totalPercent >= 80
               ? "bg-green-50 text-green-700"
-              : total > 0
+              : totalHours > 0
               ? "bg-yellow-50 text-yellow-700"
               : "bg-gray-50 text-gray-500"
           }`}
         >
-          Total: {total}%
+          Total: {Math.round(totalHours * 10) / 10}h ({totalPercent}%)
         </div>
 
         {/* Rows */}
@@ -161,12 +188,12 @@ export function EditWeekDialog({
               <Input
                 type="number"
                 min={0}
-                step={1}
-                value={row.load}
-                onChange={(e) => updateRow(idx, "load", e.target.value)}
+                step={0.5}
+                value={row.hours}
+                onChange={(e) => updateRow(idx, "hours", e.target.value)}
                 className="w-20 h-8 text-sm"
               />
-              <span className="text-sm text-gray-400 w-3">%</span>
+              <span className="text-sm text-gray-400 w-3">h</span>
               <button
                 onClick={() => removeRow(idx)}
                 className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded"

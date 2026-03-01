@@ -89,3 +89,29 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
 
    The system shall provide a post-install validation step that verifies required planning structure and files for runtime readiness.
    Validation output shall clearly identify missing directories/files and provide actionable remediation guidance for non-developer operators.
+
+.. req:: Hybrid startup mode for local dashboard
+   :id: REQ_PUSSLA_044
+   :status: open
+   :tags: deployment, ux, cli
+
+   The system shall support a hybrid startup mode for local dashboard execution.
+   The dashboard shall support auto-detecting data roots from the current working directory for simple non-developer usage.
+   The dashboard shall also support explicit path-based startup via command arguments (for example ``--data-dir``, ``--planning-dir``, ``--identity-dir``) for advanced and scripted usage.
+
+.. req:: Startup path precedence and deterministic behavior
+   :id: REQ_PUSSLA_045
+   :status: open
+   :tags: deployment, cli, reliability
+
+   When explicit path arguments are provided, explicit paths shall take precedence over auto-detection.
+   Startup path resolution behavior shall be deterministic and documented so users can predict which dataset is loaded.
+   Startup output shall show the resolved planning and identity paths.
+
+.. req:: Actionable startup errors for missing data roots
+   :id: REQ_PUSSLA_046
+   :status: open
+   :tags: deployment, ux, validation
+
+   If startup cannot resolve valid planning and identity roots, the system shall fail with actionable error messages.
+   Error messages shall include expected directory/file structure and example commands for both auto-detected and explicit-path startup modes.

@@ -13,15 +13,24 @@ import pussla_engine
 
 
 class TestDashboardEditing(unittest.TestCase):
+    @staticmethod
+    def _read_frontmatter(path: Path) -> dict:
+        text = path.read_text(encoding='utf-8')
+        parts = text.split("\n---\n", 1)
+        return yaml.safe_load(parts[0][4:]) or {}
+
     def test_update_week_allocations_replaces_week_only_and_supports_multi_project(self):
         with tempfile.TemporaryDirectory() as tmp:
             planning = Path(tmp) / 'planning'
-            alloc_dir = planning / 'allocations'
-            alloc_dir.mkdir(parents=True)
-            path = alloc_dir / 'alice.yaml'
+            people_dir = planning / 'people'
+            people_dir.mkdir(parents=True)
+            path = people_dir / 'alice.md'
             path.write_text(
                 """
+---
 alias: alice
+role_id: Dev-Role
+skills: [python]
 allocations:
   - project: Project-A
     weeks: ["2026-W01", "2026-W02"]
@@ -29,6 +38,8 @@ allocations:
   - project: Project-B
     weeks: ["2026-W02"]
     load: 20
+---
+Notes
 """.lstrip(),
                 encoding='utf-8',
             )
@@ -48,7 +59,7 @@ allocations:
             self.assertEqual(result['projects_count'], 2)
             self.assertEqual(result['total_load'], 110)
 
-            data = yaml.safe_load(path.read_text(encoding='utf-8'))
+            data = self._read_frontmatter(path)
             by_project = {entry['project']: entry for entry in data['allocations']}
 
             # Existing unaffected week must remain.
@@ -62,12 +73,17 @@ allocations:
     def test_update_week_allocations_validates_payload(self):
         with tempfile.TemporaryDirectory() as tmp:
             planning = Path(tmp) / 'planning'
-            alloc_dir = planning / 'allocations'
-            alloc_dir.mkdir(parents=True)
-            (alloc_dir / 'alice.yaml').write_text(
+            people_dir = planning / 'people'
+            people_dir.mkdir(parents=True)
+            (people_dir / 'alice.md').write_text(
                 """
+---
 alias: alice
+role_id: Dev-Role
+skills: [python]
 allocations: []
+---
+Notes
 """.lstrip(),
                 encoding='utf-8',
             )
@@ -91,13 +107,18 @@ allocations: []
     def test_update_week_allocations_supports_planned_hours(self):
         with tempfile.TemporaryDirectory() as tmp:
             planning = Path(tmp) / 'planning'
-            alloc_dir = planning / 'allocations'
-            alloc_dir.mkdir(parents=True)
-            path = alloc_dir / 'alice.yaml'
+            people_dir = planning / 'people'
+            people_dir.mkdir(parents=True)
+            path = people_dir / 'alice.md'
             path.write_text(
                 """
+---
 alias: alice
+role_id: Dev-Role
+skills: [python]
 allocations: []
+---
+Notes
 """.lstrip(),
                 encoding='utf-8',
             )
@@ -114,7 +135,7 @@ allocations: []
             self.assertEqual(result['total_planned_hours'], 16.0)
             self.assertEqual(result['total_load'], 40)
 
-            data = yaml.safe_load(path.read_text(encoding='utf-8'))
+            data = self._read_frontmatter(path)
             entry = data['allocations'][0]
             self.assertEqual(entry['project'], 'Project-Hours')
             self.assertEqual(entry['planned_hours'], 16.0)

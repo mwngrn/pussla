@@ -17,16 +17,22 @@ availability checks, recommendation quality, and booking workflows.
    :status: open
    :tags: staffing, data-model, matching
 
-   The system shall track each person's title/role and skills, including skill keywords used for matching (for example C++, Python, Rust, Zephyr).
-   It shall be possible to identify available people for a project based on required title/role and required skills.
+   The system shall track each person's role via ``role_id`` and skills via normalized skill keywords used for matching (for example ``c++``, ``python``, ``rust``, ``zephyr``).
+   It shall be possible to identify available people for a project based on required ``role_id`` and required skills.
 
 .. req:: Structured title-role and skill profile for people
    :id: REQ_PUSSLA_033
    :status: open
    :tags: staffing, data-model, skills
 
-   The system shall store a structured people profile with title/role and skills for staffing queries.
-   Skill entries shall support normalized matching terms (for example ``c++``, ``python``, ``rust``, ``zephyr``) and may include proficiency metadata.
+   The system shall store structured people profiles in ``tst-data/planning/people/<alias>.md`` using YAML frontmatter and Markdown body.
+   Each people profile shall include ``alias``, ``role_id``, and ``skills`` (list).
+   Roles shall be defined in ``tst-data/planning/roles/<role_id>.md`` using YAML frontmatter and Markdown body.
+   Role files shall require ``role_id`` and ``name`` in frontmatter.
+   ``role_id`` shall match ``^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`` and be unique across role files.
+   Additional frontmatter fields in role files may be present and shall produce a warning (not an error) from lint/validation.
+   Skill entries shall support normalized matching terms and synonym mapping from ``tst-data/planning/skills.md``.
+   Unknown skill terms may be present and shall produce a warning (not an error) from lint/validation.
 
 .. req:: Staffing request with role-skill-time constraints
    :id: REQ_PUSSLA_034

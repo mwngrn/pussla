@@ -30,24 +30,24 @@ This folder is restricted. It maps an anonymous `alias` to a real human being.
 * **Format:** Markdown with YAML Frontmatter.
 * **Example:** `tst-data/identity/FishCatcher.md` contains "Erik Andersson".
 
-### 2. The Allocation Layer (`tst-data/planning/allocations/`)
+### 2. The Planning Layer (`tst-data/planning/people/`)
 *The "AI-Safe" zone.*
 This is where the actual planning happens. It uses only `alias` values, meaning you can run AI analysis on this folder without exposing names to third-party models.
-* **Format:** YAML.
+* **Format:** Markdown with YAML Frontmatter.
 * **Granularity:** Weekly slots, aggregated into months and quarters.
 
-### 3. The Project Layer (`tst-data/planning/projects/`)
+### 3. Roles and Projects (`tst-data/planning/roles/` + `tst-data/planning/projects/`)
 *Project context without PII.*
-This folder stores project metadata and narrative context using YAML frontmatter + Markdown body.
+These folders store role definitions and project metadata/context using YAML frontmatter + Markdown body.
 * **Format:** Markdown with YAML Frontmatter.
-* **Use:** Scope, risks, owner alias, team aliases, and time bounds.
+* **Use:** Role catalogs plus project scope, risks, owner alias, team aliases, and time bounds.
 
 ---
 
 ## 🛠 Getting Started
 
 ### 1. Find your piece
-To see your own allocation, look for your alias in `tst-data/planning/allocations/`.
+To see your own allocation, look for your alias in `tst-data/planning/people/`.
 > *Obs! Glöm inte att kolla så du inte är överbokad.* (Note: Don't forget to check that you aren't overbooked.)
 
 ### 2. Making changes
@@ -97,7 +97,7 @@ To use the richer frontend developed in react, go to the .src/frontend folder an
 
 For testing and AI-safe sharing:
 * Shareable folder: `tst-data/planning/`
-* Public planning data: `tst-data/planning/allocations/` and `tst-data/planning/projects/`
+* Public planning data: `tst-data/planning/people/`, `tst-data/planning/roles/`, `tst-data/planning/skills.md`, and `tst-data/planning/projects/`
 * Private identity mapping (not shared): `tst-data/identity/`
 
 ---

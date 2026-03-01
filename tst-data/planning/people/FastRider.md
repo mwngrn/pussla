@@ -1,4 +1,7 @@
+---
 alias: FastRider
+role_id: Consultant
+skills: []
 allocations:
 - project: Project-Neon
   weeks:
@@ -46,3 +49,5 @@ allocations:
   capacity_hours: 40.0
   load: 32
   state: committed
+---
+Profile for FastRider.

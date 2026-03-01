@@ -24,21 +24,29 @@ class TestValidation(unittest.TestCase):
 
     def test_validate_allocations_supports_planned_hours(self):
         with tempfile.TemporaryDirectory() as tmp:
-            allocations_dir = Path(tmp)
-            (allocations_dir / "alice.yaml").write_text(
+            people_dir = Path(tmp)
+            (people_dir / "alice.md").write_text(
                 """
+---
 alias: alice
+role_id: Dev-Role
+skills: [python]
 allocations:
   - project: Project-A
     weeks: ["2026-W10"]
     planned_hours: 16
     capacity_hours: 40
+---
+Profile
 """.lstrip(),
                 encoding="utf-8",
             )
 
-            errors, totals, ref_projects = validate_planning_data.validate_allocations(
-                allocations_dir
+            errors, _warnings, totals, ref_projects, _aliases = validate_planning_data.validate_people(
+                people_dir=people_dir,
+                known_roles={"Dev-Role"},
+                canonical_skills={"python"},
+                skill_synonyms={},
             )
 
             self.assertEqual(errors, [])
@@ -47,10 +55,13 @@ allocations:
 
     def test_validate_allocations_flags_overallocation_by_hours(self):
         with tempfile.TemporaryDirectory() as tmp:
-            allocations_dir = Path(tmp)
-            (allocations_dir / "alice.yaml").write_text(
+            people_dir = Path(tmp)
+            (people_dir / "alice.md").write_text(
                 """
+---
 alias: alice
+role_id: Dev-Role
+skills: [python]
 allocations:
   - project: Project-A
     weeks: ["2026-W10"]
@@ -60,12 +71,17 @@ allocations:
     weeks: ["2026-W10"]
     planned_hours: 20
     capacity_hours: 40
+---
+Profile
 """.lstrip(),
                 encoding="utf-8",
             )
 
-            errors, _totals, _ref_projects = validate_planning_data.validate_allocations(
-                allocations_dir
+            errors, _warnings, _totals, _ref_projects, _aliases = validate_planning_data.validate_people(
+                people_dir=people_dir,
+                known_roles={"Dev-Role"},
+                canonical_skills={"python"},
+                skill_synonyms={},
             )
 
             self.assertTrue(

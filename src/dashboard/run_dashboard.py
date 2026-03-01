@@ -205,7 +205,7 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planning/ (or legacy planing/) and identity/")
-    parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains allocations/ and projects/)")
+    parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains people/, roles/, and projects/)")
     parser.add_argument("--identity-dir", default=None, help="Override identity folder")
     args = parser.parse_args()
 

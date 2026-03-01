@@ -10,8 +10,8 @@ We need to decide whether to store allocation data based on the project (one fil
 
 Decision
 
-We will use Person-centric storage for allocations. Each unique alias will have its own file in the /allocations/ directory (e.g., /allocations/fishcatcher.yaml).
-Project metadata and narrative context are stored separately in /projects as Markdown files with YAML frontmatter.
+We will use person-centric storage in the planning layer. Each unique alias will have its own file in `/planning/people/` (for example `/planning/people/fishcatcher.md` with YAML frontmatter).
+Project metadata and narrative context are stored separately in `/planning/projects/` as Markdown files with YAML frontmatter.
 
 Rationale
 
@@ -39,6 +39,6 @@ Company Views: "What is our total utilization?"
 
 Consequences
 
-File Count: We will have approximately 100+ files in the allocations folder. This is well within the performance limits of Git and our Python parser.
+File Count: We will have approximately 100+ files in the `planning/people` folder. This is well within the performance limits of Git and our Python parser.
 
-Discovery: To find who is on a project without using the GUI, developers can use standard CLI tools like grep -r "Project Name" ./allocations.
+Discovery: To find who is on a project without using the GUI, developers can use standard CLI tools like `grep -r "Project Name" ./planning/people`.

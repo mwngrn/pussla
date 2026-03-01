@@ -14,14 +14,12 @@ import yaml
 
 
 ISO_WEEK_RE = re.compile(r"^\d{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$")
+ROLE_ID_RE = re.compile(r"^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 PHONE_RE = re.compile(r"\+?\d[\d \t().-]{7,}\d")
 DEFAULT_CAPACITY_HOURS = 40.0
-
-
-def read_yaml(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+ROLE_REQUIRED_FIELDS = {"role_id", "name"}
+SKILLS_REQUIRED_FIELDS = {"canonical_skills"}
 
 
 def parse_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
@@ -39,6 +37,10 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
     return data, body
 
 
+def normalize_skill(value: str) -> str:
+    return value.strip().lower()
+
+
 def load_real_names(identity_dir: Path) -> list[str]:
     names: list[str] = []
     if not identity_dir.exists():
@@ -54,31 +56,151 @@ def load_real_names(identity_dir: Path) -> list[str]:
     return names
 
 
-def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, dict[str, float]], set[str]]:
+def validate_roles(roles_dir: Path) -> tuple[list[str], list[str], dict[str, str]]:
     errors: list[str] = []
+    warnings: list[str] = []
+    role_names: dict[str, str] = {}
+
+    for path in sorted(roles_dir.glob("*.md")):
+        try:
+            frontmatter, _body = parse_frontmatter(path)
+        except Exception as exc:
+            errors.append(f"{path}: {exc}")
+            continue
+
+        missing = [k for k in sorted(ROLE_REQUIRED_FIELDS) if k not in frontmatter]
+        if missing:
+            errors.append(f"{path}: missing required frontmatter field(s): {', '.join(missing)}")
+            continue
+
+        role_id = frontmatter.get("role_id")
+        name = frontmatter.get("name")
+        if not isinstance(role_id, str) or not role_id.strip():
+            errors.append(f"{path}: 'role_id' must be a non-empty string")
+            continue
+        if not ROLE_ID_RE.match(role_id):
+            errors.append(
+                f"{path}: 'role_id' must match {ROLE_ID_RE.pattern}"
+            )
+            continue
+        if role_id in role_names:
+            errors.append(f"{path}: duplicate role_id '{role_id}'")
+            continue
+
+        if not isinstance(name, str) or not name.strip():
+            errors.append(f"{path}: 'name' must be a non-empty string")
+            continue
+
+        for extra_key in sorted(k for k in frontmatter.keys() if k not in ROLE_REQUIRED_FIELDS):
+            warnings.append(f"{path}: unknown role frontmatter field '{extra_key}' (allowed, but ignored by schema)")
+
+        role_names[role_id] = name.strip()
+
+    return errors, warnings, role_names
+
+
+def validate_skills_catalog(skills_path: Path) -> tuple[list[str], list[str], set[str], dict[str, str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
+    canonical: set[str] = set()
+    synonyms: dict[str, str] = {}
+
+    try:
+        frontmatter, _body = parse_frontmatter(skills_path)
+    except Exception as exc:
+        return [f"{skills_path}: {exc}"], warnings, canonical, synonyms
+
+    missing = [k for k in sorted(SKILLS_REQUIRED_FIELDS) if k not in frontmatter]
+    if missing:
+        errors.append(f"{skills_path}: missing required frontmatter field(s): {', '.join(missing)}")
+        return errors, warnings, canonical, synonyms
+
+    canonical_skills = frontmatter.get("canonical_skills")
+    if not isinstance(canonical_skills, list):
+        errors.append(f"{skills_path}: 'canonical_skills' must be a list")
+        return errors, warnings, canonical, synonyms
+
+    for idx, skill in enumerate(canonical_skills):
+        if not isinstance(skill, str) or not skill.strip():
+            errors.append(f"{skills_path}: canonical_skills[{idx}] must be a non-empty string")
+            continue
+        canonical.add(normalize_skill(skill))
+
+    raw_synonyms = frontmatter.get("synonyms", {})
+    if raw_synonyms is None:
+        raw_synonyms = {}
+    if not isinstance(raw_synonyms, dict):
+        errors.append(f"{skills_path}: 'synonyms' must be an object/map when provided")
+        return errors, warnings, canonical, synonyms
+
+    for raw_key, raw_target in raw_synonyms.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            errors.append(f"{skills_path}: synonym key '{raw_key}' must be a non-empty string")
+            continue
+        if not isinstance(raw_target, str) or not raw_target.strip():
+            errors.append(f"{skills_path}: synonym target for '{raw_key}' must be a non-empty string")
+            continue
+        key = normalize_skill(raw_key)
+        target = normalize_skill(raw_target)
+        synonyms[key] = target
+        if canonical and target not in canonical:
+            warnings.append(
+                f"{skills_path}: synonym '{raw_key}' points to non-canonical target '{raw_target}'"
+            )
+
+    return errors, warnings, canonical, synonyms
+
+
+def validate_people(
+    people_dir: Path,
+    known_roles: set[str],
+    canonical_skills: set[str],
+    skill_synonyms: dict[str, str],
+) -> tuple[list[str], list[str], dict[str, dict[str, float]], set[str], set[str]]:
+    errors: list[str] = []
+    warnings: list[str] = []
     totals: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     capacities: dict[str, dict[str, float]] = defaultdict(dict)
     referenced_projects: set[str] = set()
+    known_aliases: set[str] = set()
 
-    for path in sorted(allocations_dir.glob("*.yaml")):
+    for path in sorted(people_dir.glob("*.md")):
         try:
-            data = read_yaml(path)
+            frontmatter, _body = parse_frontmatter(path)
         except Exception as exc:
-            errors.append(f"{path}: failed to parse YAML: {exc}")
+            errors.append(f"{path}: {exc}")
             continue
 
-        if not isinstance(data, dict):
-            errors.append(f"{path}: root must be a YAML object")
-            continue
-
-        alias = data.get("alias")
-        entries = data.get("allocations")
+        alias = frontmatter.get("alias")
+        role_id = frontmatter.get("role_id")
+        skills = frontmatter.get("skills")
+        entries = frontmatter.get("allocations")
 
         if not isinstance(alias, str) or not alias.strip():
             errors.append(f"{path}: 'alias' must be a non-empty string")
             continue
         if path.stem != alias:
             errors.append(f"{path}: filename stem must match alias ('{alias}')")
+        known_aliases.add(alias)
+
+        if not isinstance(role_id, str) or not role_id.strip():
+            errors.append(f"{path}: 'role_id' must be a non-empty string")
+        elif known_roles and role_id not in known_roles:
+            errors.append(f"{path}: unknown role_id '{role_id}' (not found in roles/)")
+
+        if not isinstance(skills, list):
+            errors.append(f"{path}: 'skills' must be a list")
+        else:
+            for idx, skill in enumerate(skills):
+                if not isinstance(skill, str) or not skill.strip():
+                    errors.append(f"{path}: skills[{idx}] must be a non-empty string")
+                    continue
+                normalized = normalize_skill(skill)
+                canonical = skill_synonyms.get(normalized, normalized)
+                if canonical_skills and canonical not in canonical_skills:
+                    warnings.append(
+                        f"{path}: unknown skill '{skill}' (allowed, but not in canonical_skills)"
+                    )
 
         if not isinstance(entries, list):
             errors.append(f"{path}: 'allocations' must be a list")
@@ -167,7 +289,18 @@ def validate_allocations(allocations_dir: Path) -> tuple[list[str], dict[str, di
                     f"in week {week} (capacity {round(capacity, 1)}h, {percent}%)"
                 )
 
-    return errors, totals, referenced_projects
+    return errors, warnings, totals, referenced_projects, known_aliases
+
+
+def validate_allocations(people_dir: Path) -> tuple[list[str], dict[str, dict[str, float]], set[str]]:
+    """Backward-compatible test helper name."""
+    errors, _warnings, totals, ref_projects, _aliases = validate_people(
+        people_dir=people_dir,
+        known_roles=set(),
+        canonical_skills=set(),
+        skill_synonyms={},
+    )
+    return errors, totals, ref_projects
 
 
 def validate_projects(projects_dir: Path) -> tuple[list[str], set[str]]:
@@ -191,7 +324,7 @@ def validate_projects(projects_dir: Path) -> tuple[list[str], set[str]]:
             errors.append(f"{path}: 'project_id' must be a non-empty string")
         if not isinstance(frontmatter["name"], str) or not frontmatter["name"].strip():
             errors.append(f"{path}: 'name' must be a non-empty string")
-        
+
         owner = frontmatter.get("owner_alias")
         if not isinstance(owner, str) or not owner.strip():
             errors.append(f"{path}: 'owner_alias' must be a non-empty string")
@@ -205,7 +338,7 @@ def validate_projects(projects_dir: Path) -> tuple[list[str], set[str]]:
 
         if not isinstance(frontmatter["status"], str) or not frontmatter["status"].strip():
             errors.append(f"{path}: 'status' must be a non-empty string")
-        
+
         team = frontmatter.get("team_aliases")
         if not isinstance(team, list):
             errors.append(f"{path}: 'team_aliases' must be a list")
@@ -242,56 +375,74 @@ def check_pii_leaks(public_files: list[Path], real_names: list[str]) -> list[str
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Pussla planning dataset")
-    parser.add_argument("--planning-dir", default="tst-data/planning", help="Path containing allocations/ and projects/")
+    parser.add_argument("--planning-dir", default="tst-data/planning", help="Path containing people/, roles/, projects/, and skills.md")
     parser.add_argument("--identity-dir", default="tst-data/identity", help="Path containing identity markdown files")
     args = parser.parse_args()
 
     planning_dir = Path(args.planning_dir)
     identity_dir = Path(args.identity_dir)
-    allocations_dir = planning_dir / "allocations"
+    people_dir = planning_dir / "people"
+    roles_dir = planning_dir / "roles"
     projects_dir = planning_dir / "projects"
+    skills_path = planning_dir / "skills.md"
 
     errors: list[str] = []
-    if not allocations_dir.exists():
-        errors.append(f"missing directory: {allocations_dir}")
+    if not people_dir.exists():
+        errors.append(f"missing directory: {people_dir}")
+    if not roles_dir.exists():
+        errors.append(f"missing directory: {roles_dir}")
     if not projects_dir.exists():
         errors.append(f"missing directory: {projects_dir}")
+    if not skills_path.exists():
+        errors.append(f"missing file: {skills_path}")
     if errors:
         for err in errors:
             print(f"ERROR: {err}")
         return 1
 
-    alloc_errors, totals, ref_projects = validate_allocations(allocations_dir)
+    role_errors, role_warnings, role_names = validate_roles(roles_dir)
+    skills_errors, skills_warnings, canonical_skills, skill_synonyms = validate_skills_catalog(skills_path)
+    people_errors, people_warnings, totals, ref_projects, known_aliases = validate_people(
+        people_dir=people_dir,
+        known_roles=set(role_names.keys()),
+        canonical_skills=canonical_skills,
+        skill_synonyms=skill_synonyms,
+    )
     project_errors, ref_aliases = validate_projects(projects_dir)
-    
-    known_aliases = {p.stem for p in allocations_dir.glob("*.yaml")}
-    known_projects = {p.stem for p in projects_dir.glob("*.md")}
 
+    known_projects = {p.stem for p in projects_dir.glob("*.md")}
     cross_errors: list[str] = []
     for proj in sorted(ref_projects):
         if proj not in known_projects:
-            cross_errors.append(f"cross-reference: project '{proj}' referenced in allocations but not found in projects/")
-    
+            cross_errors.append(f"cross-reference: project '{proj}' referenced in people but not found in projects/")
+
     for alias in sorted(ref_aliases):
         if alias not in known_aliases:
-            cross_errors.append(f"cross-reference: alias '{alias}' referenced in projects but not found in allocations/")
+            cross_errors.append(f"cross-reference: alias '{alias}' referenced in projects but not found in people/")
 
     real_names = load_real_names(identity_dir)
     pii_errors = check_pii_leaks(
-        [*sorted(allocations_dir.glob("*.yaml")), *sorted(projects_dir.glob("*.md"))],
+        [*sorted(people_dir.glob("*.md")), *sorted(roles_dir.glob("*.md")), *sorted(projects_dir.glob("*.md")), skills_path],
         real_names,
     )
 
-    all_errors = [*alloc_errors, *project_errors, *cross_errors, *pii_errors]
+    all_warnings = [*role_warnings, *skills_warnings, *people_warnings]
+    all_errors = [*role_errors, *skills_errors, *people_errors, *project_errors, *cross_errors, *pii_errors]
+
+    for warning in all_warnings:
+        print(f"WARNING: {warning}")
     if all_errors:
         for err in all_errors:
             print(f"ERROR: {err}")
-        print(f"\nValidation failed with {len(all_errors)} error(s).")
+        print(f"\nValidation failed with {len(all_errors)} error(s) and {len(all_warnings)} warning(s).")
         return 1
 
     print("Validation passed.")
-    print(f"- allocations files: {len(known_aliases)}")
+    print(f"- people files: {len(known_aliases)}")
+    print(f"- role files: {len(role_names)}")
     print(f"- project files: {len(known_projects)}")
+    print(f"- weekly total slots computed: {sum(len(v) for v in totals.values())}")
+    print(f"- warnings: {len(all_warnings)}")
     print(f"- identity files scanned: {len(list(identity_dir.glob('*.md')))}")
     return 0
 

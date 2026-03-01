@@ -1,4 +1,7 @@
+---
 alias: CopperKite
+role_id: Consultant
+skills: []
 allocations:
   - project: Project-River
     weeks: ["2026-W09", "2026-W10", "2026-W11"]
@@ -9,3 +12,5 @@ allocations:
   - project: Ops-Rotation
     weeks: ["2026-W15", "2026-W16", "2026-W17"]
     load: 50
+---
+Profile for CopperKite.

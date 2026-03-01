@@ -1,4 +1,7 @@
+---
 alias: PixelSmith
+role_id: Consultant
+skills: []
 allocations:
 - project: Platform-Core
   weeks:
@@ -26,3 +29,5 @@ allocations:
   weeks:
   - 2026-W07
   load: 60
+---
+Profile for PixelSmith.

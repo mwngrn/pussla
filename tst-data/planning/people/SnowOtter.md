@@ -1,4 +1,7 @@
+---
 alias: SnowOtter
+role_id: Consultant
+skills: []
 allocations:
   - project: Project-Delta
     weeks: ["2026-W09", "2026-W10"]
@@ -9,3 +12,5 @@ allocations:
   - project: Project-Support
     weeks: ["2026-W14", "2026-W15", "2026-W16", "2026-W17"]
     load: 60
+---
+Profile for SnowOtter.

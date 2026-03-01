@@ -10,7 +10,7 @@ In a "Planning-as-Code" system like **Pussla**, users are typically represented 
 We will implement a **Creative Alias System**. 
 * Every user will select a unique "Pussla-alias" that serves as their public-facing identifier within the repository.
 * The mapping between the alias and the real identity remains strictly confined to the protected `/identity/` directory.
-* The `/allocations/` and `/projects/` directories will exclusively use these aliases.
+* The `/planning/people/`, `/planning/roles/`, and `/planning/projects/` directories will exclusively use these aliases.
 
 ---
 

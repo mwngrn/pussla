@@ -1,4 +1,7 @@
+---
 alias: MossRiver
+role_id: Consultant
+skills: []
 allocations:
 - project: Project-Maple
   weeks:
@@ -25,3 +28,5 @@ allocations:
   weeks:
   - 2026-W07
   load: 75
+---
+Profile for MossRiver.

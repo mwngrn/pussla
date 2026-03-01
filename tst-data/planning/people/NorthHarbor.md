@@ -1,4 +1,7 @@
+---
 alias: NorthHarbor
+role_id: Consultant
+skills: []
 allocations:
 - project: Project-Saga
   weeks:
@@ -34,3 +37,5 @@ allocations:
   weeks:
   - 2026-W08
   load: 90
+---
+Profile for NorthHarbor.

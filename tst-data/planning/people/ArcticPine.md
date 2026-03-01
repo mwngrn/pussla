@@ -1,4 +1,7 @@
+---
 alias: ArcticPine
+role_id: Consultant
+skills: []
 allocations:
 - project: Project-Bridge
   weeks:
@@ -41,3 +44,5 @@ allocations:
   capacity_hours: 40.0
   load: 38
   state: committed
+---
+Profile for ArcticPine.

@@ -83,13 +83,33 @@ def _collect_identities(identity_dir: Path) -> dict[str, dict[str, str | None]]:
             continue
 
         real_name = frontmatter.get("real_name")
-        role = frontmatter.get("role")
         identities[alias] = {
             "real_name": real_name if isinstance(real_name, str) else None,
-            "role": role if isinstance(role, str) and role.strip() else "Consultant",
         }
 
     return identities
+
+
+def _collect_roles(roles_dir: Path) -> dict[str, dict[str, str]]:
+    roles: dict[str, dict[str, str]] = {}
+    if not roles_dir.exists():
+        return roles
+
+    for path in sorted(roles_dir.glob("*.md")):
+        frontmatter, _ = _parse_frontmatter(path)
+        role_id = frontmatter.get("role_id")
+        name = frontmatter.get("name")
+        if not isinstance(role_id, str) or not role_id.strip():
+            continue
+        role_id = role_id.strip()
+        if not isinstance(name, str) or not name.strip():
+            name = role_id
+        roles[role_id] = {
+            "role_id": role_id,
+            "name": name.strip(),
+        }
+
+    return roles
 
 
 def _collect_project_context(projects_dir: Path) -> dict[str, dict[str, Any]]:
@@ -258,29 +278,29 @@ def update_week_allocations(
         )
 
     planning_path = Path(planning_dir)
-    alloc_file = planning_path / "allocations" / f"{alias}.yaml"
-    if not alloc_file.exists():
-        raise FileNotFoundError(f"allocation file not found for alias '{alias}'")
+    people_file = planning_path / "people" / f"{alias}.md"
+    if not people_file.exists():
+        raise FileNotFoundError(f"people file not found for alias '{alias}'")
 
     try:
-        data = yaml.safe_load(alloc_file.read_text(encoding="utf-8")) or {}
+        data, body = _parse_frontmatter(people_file)
     except Exception as exc:
-        raise ValueError(f"failed to parse allocation file for '{alias}'") from exc
+        raise ValueError(f"failed to parse people file for '{alias}'") from exc
 
     if not isinstance(data, dict):
-        raise ValueError(f"allocation file for '{alias}' must contain a YAML object")
+        raise ValueError(f"people file for '{alias}' must contain YAML frontmatter object")
 
     file_alias = data.get("alias")
     if not isinstance(file_alias, str) or not file_alias.strip():
         data["alias"] = alias
     elif file_alias != alias:
-        raise ValueError(f"allocation file alias mismatch: expected '{alias}', found '{file_alias}'")
+        raise ValueError(f"people file alias mismatch: expected '{alias}', found '{file_alias}'")
 
     raw_allocations = data.get("allocations")
     if raw_allocations is None:
         raw_allocations = []
     if not isinstance(raw_allocations, list):
-        raise ValueError("allocation file field 'allocations' must be a list")
+        raise ValueError("people file field 'allocations' must be a list")
 
     rebuilt: list[dict[str, Any]] = []
     for entry in raw_allocations:
@@ -378,12 +398,13 @@ def update_week_allocations(
 
     data["allocations"] = rebuilt
 
-    alloc_file.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile("w", encoding="utf-8", dir=alloc_file.parent, delete=False) as tmp:
-        yaml.safe_dump(data, tmp, sort_keys=False, allow_unicode=True)
+    people_file.parent.mkdir(parents=True, exist_ok=True)
+    rendered = f"---\n{yaml.safe_dump(data, sort_keys=False, allow_unicode=True).strip()}\n---\n{body}"
+    with NamedTemporaryFile("w", encoding="utf-8", dir=people_file.parent, delete=False) as tmp:
+        tmp.write(rendered)
         temp_path = Path(tmp.name)
 
-    temp_path.replace(alloc_file)
+    temp_path.replace(people_file)
 
     total_load = sum(entry["load"] for entry in normalized_entries)
     total_planned_hours = round(sum(float(entry["planned_hours"]) for entry in normalized_entries), 1)
@@ -489,10 +510,12 @@ def build_dashboard_data(
 ) -> dict[str, Any]:
     planning_path = Path(planning_dir)
     identity_path = Path(identity_dir)
-    allocations_dir = planning_path / "allocations"
+    people_dir = planning_path / "people"
+    roles_dir = planning_path / "roles"
     projects_dir = planning_path / "projects"
 
     identities = _collect_identities(identity_path)
+    roles = _collect_roles(roles_dir)
     project_context = _collect_project_context(projects_dir)
 
     users_by_alias: dict[str, dict[str, Any]] = {}
@@ -500,9 +523,9 @@ def build_dashboard_data(
     raw_allocations: list[dict[str, Any]] = []
     project_week_bounds: dict[str, dict[str, str]] = {}
 
-    for alloc_file in sorted(allocations_dir.glob("*.yaml")):
+    for people_file in sorted(people_dir.glob("*.md")):
         try:
-            data = yaml.safe_load(alloc_file.read_text(encoding="utf-8")) or {}
+            data, _ = _parse_frontmatter(people_file)
         except Exception:
             continue
 
@@ -515,12 +538,17 @@ def build_dashboard_data(
             continue
 
         identity = identities.get(alias, {})
+        role_id = data.get("role_id")
+        role_name = roles.get(role_id, {}).get("name") if isinstance(role_id, str) else None
+        role_value = role_name or (role_id if isinstance(role_id, str) and role_id.strip() else "Consultant")
         user = users_by_alias.setdefault(
             alias,
             {
                 "alias": alias,
                 "real_name": identity.get("real_name") if include_pii else None,
-                "role": identity.get("role") or "Consultant",
+                "role": role_value,
+                "role_id": role_id if isinstance(role_id, str) and role_id.strip() else None,
+                "skills": data.get("skills") if isinstance(data.get("skills"), list) else [],
                 "weekly": defaultdict(
                     lambda: {
                         "total_load": 0.0,
@@ -644,6 +672,8 @@ def build_dashboard_data(
                 "real_name": real_name,
                 "display_name": real_name if isinstance(real_name, str) and real_name.strip() else alias,
                 "role": user["role"],
+                "role_id": user.get("role_id"),
+                "skills": user.get("skills", []),
                 "weekly_stats": weekly_stats,
             }
         )
@@ -712,7 +742,7 @@ def write_dashboard_json(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build dashboard JSON from Pussla data")
     parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planning/ (or legacy planing/) and identity/")
-    parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains allocations/ and projects/)")
+    parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains people/, roles/, and projects/)")
     parser.add_argument("--identity-dir", default=None, help="Override identity folder")
     parser.add_argument("--output-file", default="pussla_data.json")
     parser.add_argument("--no-pii", action="store_true", help="Exclude real names from output")

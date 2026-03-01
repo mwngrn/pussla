@@ -1,4 +1,7 @@
+---
 alias: LimeComet
+role_id: Consultant
+skills: []
 allocations:
 - project: Project-Quartz
   weeks:
@@ -55,3 +58,5 @@ allocations:
   capacity_hours: 40.0
   load: 25
   state: tentative
+---
+Profile for LimeComet.

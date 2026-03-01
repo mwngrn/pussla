@@ -18,6 +18,17 @@ def read_yaml(path: Path) -> Any:
         return yaml.safe_load(f)
 
 
+def parse_frontmatter(path: Path) -> dict[str, Any]:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        return {}
+    parts = text.split("\n---\n", 1)
+    if len(parts) != 2:
+        return {}
+    data = yaml.safe_load(parts[0][4:]) or {}
+    return data if isinstance(data, dict) else {}
+
+
 def get_month_from_iso_week(iso_week: str) -> str:
     """Map YYYY-Www to YYYY-MM based on the first day of the ISO week."""
     # datetime.strptime(..., "%G-W%V-%u") is supported in 3.6+
@@ -25,11 +36,11 @@ def get_month_from_iso_week(iso_week: str) -> str:
     return d.strftime("%Y-%m")
 
 
-def aggregate_data(allocations_dir: Path) -> dict[str, dict[str, int]]:
+def aggregate_data(people_dir: Path) -> dict[str, dict[str, int]]:
     """Sum up total load per alias per week."""
     totals: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for path in sorted(allocations_dir.glob("*.yaml")):
-        data = read_yaml(path)
+    for path in sorted(people_dir.glob("*.md")):
+        data = parse_frontmatter(path)
         if not data or not isinstance(data, dict):
             continue
         alias = data.get("alias")
@@ -68,17 +79,17 @@ def generate_summary(totals: dict[str, dict[str, int]]):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Aggregate Pussla planning data")
-    parser.add_argument("--planning-dir", default="tst-data/planning", help="Path containing allocations/")
+    parser.add_argument("--planning-dir", default="tst-data/planning", help="Path containing people/")
     args = parser.parse_args()
 
     planning_dir = Path(args.planning_dir)
-    allocations_dir = planning_dir / "allocations"
+    people_dir = planning_dir / "people"
 
-    if not allocations_dir.exists():
-        print(f"ERROR: missing directory: {allocations_dir}")
+    if not people_dir.exists():
+        print(f"ERROR: missing directory: {people_dir}")
         return 1
 
-    totals = aggregate_data(allocations_dir)
+    totals = aggregate_data(people_dir)
     generate_summary(totals)
     return 0
 

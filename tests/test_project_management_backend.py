@@ -4,8 +4,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import yaml
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'dashboard'))
 
 import pussla_engine
@@ -61,12 +59,25 @@ Body
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             planning = root / 'planning'
-            allocations = planning / 'allocations'
+            people = planning / 'people'
+            roles = planning / 'roles'
             projects_dir = planning / 'projects'
             identity = root / 'identity'
-            allocations.mkdir(parents=True)
+            people.mkdir(parents=True)
+            roles.mkdir(parents=True)
             projects_dir.mkdir(parents=True)
             identity.mkdir(parents=True)
+
+            (roles / 'Dev-Role.md').write_text(
+                """
+---
+role_id: Dev-Role
+name: Developer
+---
+Role description
+""".lstrip(),
+                encoding='utf-8',
+            )
 
             (projects_dir / 'Project-X.md').write_text(
                 """
@@ -89,24 +100,22 @@ Body
                 encoding='utf-8',
             )
 
-            (allocations / 'alice.yaml').write_text(
-                yaml.safe_dump(
-                    {
-                        'alias': 'alice',
-                        'allocations': [
-                            {
-                                'project': 'Project-X',
-                                'weeks': ['2026-W10'],
-                                'planned_hours': 16,
-                                'capacity_hours': 40,
-                                'load': 40,
-                                'state': 'tentative',
-                            }
-                        ],
-                    },
-                    sort_keys=False,
-                    allow_unicode=True,
-                ),
+            (people / 'alice.md').write_text(
+                """
+---
+alias: alice
+role_id: Dev-Role
+skills: [python]
+allocations:
+  - project: Project-X
+    weeks: ["2026-W10"]
+    planned_hours: 16
+    capacity_hours: 40
+    load: 40
+    state: tentative
+---
+Profile
+""".lstrip(),
                 encoding='utf-8',
             )
 
@@ -124,17 +133,31 @@ Body
             self.assertAlmostEqual(slot['total_planned_hours'], 16.0)
             self.assertAlmostEqual(slot['capacity_hours'], 40.0)
             self.assertEqual(slot['projects'][0]['state'], 'tentative')
+            self.assertEqual(user['role_id'], 'Dev-Role')
 
     def test_build_dashboard_data_reads_milestone_dates_from_yaml_date_type(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             planning = root / 'planning'
-            allocations = planning / 'allocations'
+            people = planning / 'people'
+            roles = planning / 'roles'
             projects_dir = planning / 'projects'
             identity = root / 'identity'
-            allocations.mkdir(parents=True)
+            people.mkdir(parents=True)
+            roles.mkdir(parents=True)
             projects_dir.mkdir(parents=True)
             identity.mkdir(parents=True)
+
+            (roles / 'Dev-Role.md').write_text(
+                """
+---
+role_id: Dev-Role
+name: Developer
+---
+Role description
+""".lstrip(),
+                encoding='utf-8',
+            )
 
             (projects_dir / 'Project-Y.md').write_text(
                 """
@@ -156,10 +179,15 @@ Body
                 encoding='utf-8',
             )
 
-            (allocations / 'alice.yaml').write_text(
+            (people / 'alice.md').write_text(
                 """
+---
 alias: alice
+role_id: Dev-Role
+skills: []
 allocations: []
+---
+Profile
 """.lstrip(),
                 encoding='utf-8',
             )

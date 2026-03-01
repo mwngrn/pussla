@@ -16,14 +16,14 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
    :status: open
    :tags: security, architecture
 
-   The system must separate PII into an Identity Layer and anonymized data into an Allocation Layer to follow Privacy by Design.
+   The system must separate PII into an Identity Layer and anonymized alias-based data into a Planning Layer to follow Privacy by Design.
 
 .. req:: AI-safe allocation
    :id: REQ_PUSSLA_003
    :status: open
    :tags: ai, privacy
 
-   The Allocation Layer may only use anonymous aliases. This enables third-party AI analysis without exposing personal names.
+   The Planning Layer may only use anonymous aliases. This enables third-party AI analysis without exposing personal names.
 
 .. req:: Workload validation
    :id: REQ_PUSSLA_004
@@ -60,5 +60,6 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
    :status: open
    :tags: ai, privacy, structure
 
-   Test and demo data shall be shareable via a single folder, `tst-data/planning/`, containing `allocations/` and `projects/`, while `tst-data/identity/` remains separate.
-   Legacy path `tst-data/planing/` may be supported for backward compatibility.
+   Test and demo data shall be shareable via a single folder, ``tst-data/planning/``, containing at minimum ``people/``, ``roles/``, and ``projects/``, while ``tst-data/identity/`` remains separate.
+   The old ``tst-data/planning/allocations/`` path shall be treated as deprecated and not used as canonical storage.
+   Legacy path ``tst-data/planing/`` may be supported for backward compatibility.

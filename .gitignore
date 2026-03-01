@@ -248,3 +248,7 @@ __snapshots__/
 *.njsproj
 *.sln
 *.sw?
+
+# Keep frontend source lib files tracked (overrides generic 'lib/' ignore)
+!src/frontend/src/lib/
+!src/frontend/src/lib/**

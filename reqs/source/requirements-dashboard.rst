@@ -48,5 +48,5 @@ visualization, filtering, formatting, and edit behavior.
 
    The dashboard shall allow editing weekly planning for a selected person-week with support for multiple projects in the same week.
    The dashboard shall support editing planned hours and show derived allocation percentages.
-   Saving shall require explicit user action in the GUI (Save), support cancel/discard, and persist changes to planning YAML files.
+   Saving shall require explicit user action in the GUI (Save), support cancel/discard, and persist changes to planning people profile files (Markdown with YAML frontmatter).
    Overbooking (sum of planned hours greater than capacity hours, equivalent to derived percentage greater than 100%) is allowed and shall not block save.

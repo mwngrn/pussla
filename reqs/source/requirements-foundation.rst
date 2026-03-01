@@ -63,3 +63,29 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
    Test and demo data shall be shareable via a single folder, ``tst-data/planning/``, containing at minimum ``people/``, ``roles/``, and ``projects/``, while ``tst-data/identity/`` remains separate.
    The old ``tst-data/planning/allocations/`` path shall be treated as deprecated and not used as canonical storage.
    Legacy path ``tst-data/planing/`` may be supported for backward compatibility.
+
+.. req:: Non-developer installation bootstrap
+   :id: REQ_PUSSLA_041
+   :status: open
+   :tags: deployment, installation, bootstrap
+
+   The system shall support a bootstrap/setup flow suitable for non-developer users.
+   The bootstrap shall create required planning artifacts when missing, including ``tst-data/planning/skills.md`` and a default role catalog in ``tst-data/planning/roles/``.
+   Bootstrap defaults shall include at least one valid role definition (for example ``Consultant``) and a valid skills catalog skeleton with canonical skills and synonyms sections.
+
+.. req:: Idempotent setup and safe defaults
+   :id: REQ_PUSSLA_042
+   :status: open
+   :tags: deployment, installation, reliability
+
+   Running setup/bootstrap multiple times shall be idempotent.
+   Existing user-maintained planning files shall not be overwritten without explicit user confirmation or a dedicated force option.
+   Missing required artifacts shall be created with valid default content.
+
+.. req:: Installation readiness validation
+   :id: REQ_PUSSLA_043
+   :status: open
+   :tags: deployment, validation, ux
+
+   The system shall provide a post-install validation step that verifies required planning structure and files for runtime readiness.
+   Validation output shall clearly identify missing directories/files and provide actionable remediation guidance for non-developer operators.

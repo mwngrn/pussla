@@ -1,15 +1,7 @@
-# Way of Working:
-# - Requirements are tracked in `reqs/` using Sphinx-needs.
-# - Stories and implementation tasks are tracked in Backlog.md in `backlog/`.
-# - Documentation and design decisions are kept in `docs/`.
-# - `README.md` is the high-level project overview and links to deeper docs.
-# Canonical WoW document: `docs/way-of-working.md`.
-
 project_name: "pussla"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
 labels: []
-milestones: []
 date_format: yyyy-mm-dd
 max_column_width: 20
 auto_open_browser: true
@@ -19,3 +11,4 @@ auto_commit: false
 bypass_git_hooks: false
 check_active_branches: true
 active_branch_days: 30
+task_prefix: "task"

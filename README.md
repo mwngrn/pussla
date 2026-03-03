@@ -84,6 +84,7 @@ Optional flags:
 * `--data-dir /path/to/data-root` (expects `planning/` and `identity/` under that folder; legacy `planing/` is also supported)
 * `--planning-dir tst-data/planning`
 * `--identity-dir tst-data/identity`
+* `--static-dir src/frontend/dist` (force React frontend bundle)
 
 
 ### Your frontend in my backend ;) 

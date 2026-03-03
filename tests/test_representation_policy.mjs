@@ -1,11 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildActivityRowLayout,
   DEFAULT_WEEKLY_CAPACITY_HOURS,
   hoursToLoadPercent,
   loadPercentToHours,
   isoWeekKeyFromDate,
+  mapActivitiesToWeeks,
   mapMilestonesToWeeks,
+  normalizeDraggedWeekRange,
 } from "../src/frontend/src/modules/project-management/representation_policy.js";
 
 test("percent-hours conversion follows default 40h capacity", () => {
@@ -47,4 +50,74 @@ test("mapMilestonesToWeeks groups milestones by displayed weeks and sorts within
     byWeek["2026-W10"].map((m) => m.id),
     ["m3"]
   );
+});
+
+test("normalizeDraggedWeekRange returns sorted week bounds", () => {
+  assert.deepEqual(normalizeDraggedWeekRange("2026-W09", "2026-W12"), {
+    startWeek: "2026-W09",
+    endWeek: "2026-W12",
+  });
+  assert.deepEqual(normalizeDraggedWeekRange("2026-W12", "2026-W09"), {
+    startWeek: "2026-W09",
+    endWeek: "2026-W12",
+  });
+});
+
+test("mapActivitiesToWeeks creates week segments with start/end flags", () => {
+  const activities = [
+    {
+      id: "a1",
+      label: "Discovery",
+      start_date: "2026-02-23", // W09
+      end_date: "2026-03-08", // W10
+    },
+    {
+      id: "a2",
+      label: "Build",
+      start_date: "2026-03-02", // W10
+      end_date: "2026-03-15", // W11
+    },
+  ];
+  const weeks = ["2026-W09", "2026-W10", "2026-W11"];
+
+  const byWeek = mapActivitiesToWeeks(activities, weeks);
+  assert.deepEqual(Object.keys(byWeek).sort(), ["2026-W09", "2026-W10", "2026-W11"]);
+  assert.equal(byWeek["2026-W09"][0].id, "a1");
+  assert.equal(byWeek["2026-W09"][0].isStart, true);
+  assert.equal(byWeek["2026-W09"][0].isEnd, false);
+  assert.deepEqual(
+    byWeek["2026-W10"].map((a) => a.id),
+    ["a1", "a2"]
+  );
+  assert.equal(byWeek["2026-W10"][0].isEnd, true);
+  assert.equal(byWeek["2026-W10"][1].isStart, true);
+  assert.equal(byWeek["2026-W11"][0].id, "a2");
+  assert.equal(byWeek["2026-W11"][0].isEnd, true);
+});
+
+test("buildActivityRowLayout reserves one fixed row per activity across all weeks", () => {
+  const activities = [
+    {
+      id: "a1",
+      label: "Early",
+      start_date: "2026-02-23", // W09
+      end_date: "2026-03-08", // W10
+    },
+    {
+      id: "a2",
+      label: "Late",
+      start_date: "2026-03-09", // W11
+      end_date: "2026-03-15", // W11
+    },
+  ];
+  const weeks = ["2026-W09", "2026-W10", "2026-W11"];
+
+  const layout = buildActivityRowLayout(activities, weeks);
+  assert.equal(layout.rows.length, 2);
+  assert.equal(layout.byWeek["2026-W09"].length, 2);
+  assert.equal(layout.byWeek["2026-W11"].length, 2);
+  assert.equal(layout.byWeek["2026-W09"][0]?.id, "a1");
+  assert.equal(layout.byWeek["2026-W09"][1], null);
+  assert.equal(layout.byWeek["2026-W11"][0], null);
+  assert.equal(layout.byWeek["2026-W11"][1]?.id, "a2");
 });

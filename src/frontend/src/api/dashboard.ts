@@ -14,6 +14,7 @@ export interface ProjectContext {
   resolved_end_week?: string | null;
   hourly_rate?: number | null;
   milestones?: Array<{ id: string; title: string; date: string }>;
+  activities?: Array<{ id: string; label: string; start_date: string; end_date: string }>;
   summary?: string | null;
   source_file?: string | null;
 }
@@ -114,6 +115,7 @@ export interface UpdateProjectPayload {
     start_week_override?: string | null;
     end_week_override?: string | null;
     milestones?: Array<{ id?: string; title: string; date: string }>;
+    activities?: Array<{ id?: string; label: string; start_date: string; end_date: string }>;
   };
 }
 

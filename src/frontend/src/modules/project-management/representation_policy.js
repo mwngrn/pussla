@@ -41,3 +41,70 @@ export function mapMilestonesToWeeks(milestones, weeks) {
   }
   return map;
 }
+
+export function normalizeDraggedWeekRange(startWeek, endWeek) {
+  if (!startWeek || !endWeek) return null;
+  return startWeek <= endWeek
+    ? { startWeek, endWeek }
+    : { startWeek: endWeek, endWeek: startWeek };
+}
+
+export function mapActivitiesToWeeks(activities, weeks) {
+  const map = {};
+  const sorted = [...activities].sort(
+    (a, b) =>
+      a.start_date.localeCompare(b.start_date) ||
+      a.end_date.localeCompare(b.end_date) ||
+      a.label.localeCompare(b.label)
+  );
+
+  for (const activity of sorted) {
+    const startWeek = isoWeekKeyFromDate(activity.start_date);
+    const endWeek = isoWeekKeyFromDate(activity.end_date);
+    if (!startWeek || !endWeek || endWeek < startWeek) continue;
+
+    for (const week of weeks) {
+      if (week < startWeek || week > endWeek) continue;
+      if (!map[week]) map[week] = [];
+      map[week].push({
+        ...activity,
+        isStart: week === startWeek,
+        isEnd: week === endWeek,
+      });
+    }
+  }
+
+  return map;
+}
+
+export function buildActivityRowLayout(activities, weeks) {
+  const rows = [...activities].sort(
+    (a, b) =>
+      a.start_date.localeCompare(b.start_date) ||
+      a.end_date.localeCompare(b.end_date) ||
+      a.label.localeCompare(b.label)
+  );
+
+  const byWeek = {};
+  for (const week of weeks) {
+    byWeek[week] = Array(rows.length).fill(null);
+  }
+
+  rows.forEach((activity, rowIndex) => {
+    const startWeek = isoWeekKeyFromDate(activity.start_date);
+    const endWeek = isoWeekKeyFromDate(activity.end_date);
+    if (!startWeek || !endWeek || endWeek < startWeek) return;
+
+    for (const week of weeks) {
+      if (week < startWeek || week > endWeek) continue;
+      byWeek[week][rowIndex] = {
+        ...activity,
+        isStart: week === startWeek,
+        isEnd: week === endWeek,
+        rowIndex,
+      };
+    }
+  });
+
+  return { rows, byWeek };
+}

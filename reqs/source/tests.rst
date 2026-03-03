@@ -165,6 +165,33 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
    Covered by ``tests/test_project_management_backend.py``.
    Verifies tentative/committed state is retained through read/write flow and exposed in dashboard data.
 
+.. test:: Activity CRUD and date-range rendering
+   :id: TEST_PUSSLA_026
+   :status: open
+   :tags: project-management, activities, integration
+   :links: REQ_PUSSLA_047, REQ_PUSSLA_048
+
+   Planned coverage in ``tests/test_activity_crud.py``.
+   Verifies add/edit/remove flows and timeline bar rendering for date-range activities.
+
+.. test:: Activity row placement below milestones
+   :id: TEST_PUSSLA_027
+   :status: open
+   :tags: project-management, activities, frontend, unit
+   :links: REQ_PUSSLA_048
+
+   Planned coverage in ``tests/test_activity_row_layout.js``.
+   Verifies activities are rendered in a dedicated row below milestones in project planning timeline views and that each activity retains a fixed sub-row across the full displayed timeline.
+
+.. test:: Activity click and drag interaction flows
+   :id: TEST_PUSSLA_028
+   :status: open
+   :tags: project-management, activities, frontend, integration
+   :links: REQ_PUSSLA_049
+
+   Planned coverage in ``tests/test_activity_interactions.py``.
+   Verifies click-to-create dialog flow, drag-to-create start/end behavior, and click-to-edit/delete behavior for existing activities.
+
 .. test:: People profile title-role and skill schema
    :id: TEST_PUSSLA_015
    :status: open

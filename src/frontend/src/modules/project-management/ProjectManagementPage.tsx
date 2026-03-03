@@ -26,10 +26,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  buildActivityRowLayout,
   DEFAULT_WEEKLY_CAPACITY_HOURS,
   hoursToLoadPercent,
   loadPercentToHours,
   mapMilestonesToWeeks,
+  normalizeDraggedWeekRange,
 } from "./representation_policy.js";
 
 interface EditState {
@@ -53,11 +55,54 @@ interface MilestoneEditState {
   isNew: boolean;
 }
 
+interface ActivityDraft {
+  id: string;
+  label: string;
+  start_date: string;
+  end_date: string;
+}
+
+interface ActivityEditState {
+  id: string;
+  label: string;
+  start_date: string;
+  end_date: string;
+  isNew: boolean;
+}
+
 function toDateISOFromWeek(week: string): string {
   const parsed = parseIsoWeek(week);
   if (!parsed) return week;
   const date = isoWeekStartDate(parsed.year, parsed.week);
   return date.toISOString().slice(0, 10);
+}
+
+function toEndDateISOFromWeek(week: string): string {
+  const parsed = parseIsoWeek(week);
+  if (!parsed) return week;
+  const date = isoWeekStartDate(parsed.year, parsed.week);
+  date.setDate(date.getDate() + 6);
+  return date.toISOString().slice(0, 10);
+}
+
+function newDraftId(prefix: "ms" | "act"): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function ensureUniqueDraftIds<T extends { id: string }>(
+  items: T[],
+  prefix: "ms" | "act"
+): T[] {
+  const seen = new Set<string>();
+  return items.map((item) => {
+    const candidate = typeof item.id === "string" ? item.id.trim() : "";
+    const id = candidate && !seen.has(candidate) ? candidate : newDraftId(prefix);
+    seen.add(id);
+    return { ...item, id };
+  });
 }
 
 function getProjectAssignments(
@@ -155,6 +200,10 @@ export function ProjectManagementPage() {
   const [endOverrideDraft, setEndOverrideDraft] = useState("");
   const [milestones, setMilestones] = useState<MilestoneDraft[]>([]);
   const [milestoneEdit, setMilestoneEdit] = useState<MilestoneEditState | null>(null);
+  const [activities, setActivities] = useState<ActivityDraft[]>([]);
+  const [activityEdit, setActivityEdit] = useState<ActivityEditState | null>(null);
+  const [activityDragStartWeek, setActivityDragStartWeek] = useState<string | null>(null);
+  const [activityDragCurrentWeek, setActivityDragCurrentWeek] = useState<string | null>(null);
 
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ["dashboard", includePii],
@@ -187,13 +236,34 @@ export function ProjectManagementPage() {
     setEndOverrideDraft(projectContext?.end_week_override ?? "");
     const sourceMilestones = projectContext?.milestones ?? [];
     setMilestones(
-      sourceMilestones.map((m, idx) => ({
-        id: m.id ?? `ms-${idx + 1}`,
-        title: m.title,
-        date: m.date,
-      }))
+      ensureUniqueDraftIds(
+        sourceMilestones.map((m, idx) => ({
+          id: m.id ?? `ms-${idx + 1}`,
+          title: m.title,
+          date: m.date,
+        })),
+        "ms"
+      )
     );
-  }, [projectContext?.hourly_rate, projectContext?.start_week_override, projectContext?.end_week_override, projectContext?.milestones]);
+    const sourceActivities = projectContext?.activities ?? [];
+    setActivities(
+      ensureUniqueDraftIds(
+        sourceActivities.map((activity, idx) => ({
+          id: activity.id ?? `act-${idx + 1}`,
+          label: activity.label,
+          start_date: activity.start_date,
+          end_date: activity.end_date,
+        })),
+        "act"
+      )
+    );
+  }, [
+    projectContext?.hourly_rate,
+    projectContext?.start_week_override,
+    projectContext?.end_week_override,
+    projectContext?.milestones,
+    projectContext?.activities,
+  ]);
 
   const weeks = useMemo(() => {
     if (!data) return [];
@@ -267,6 +337,26 @@ export function ProjectManagementPage() {
     () => mapMilestonesToWeeks(milestones, weeks),
     [milestones, weeks]
   );
+
+  const activityLayout = useMemo(
+    () => buildActivityRowLayout(activities, weeks),
+    [activities, weeks]
+  );
+
+  const draggedActivityRange = useMemo(() => {
+    if (!activityDragStartWeek || !activityDragCurrentWeek) return null;
+    return normalizeDraggedWeekRange(activityDragStartWeek, activityDragCurrentWeek);
+  }, [activityDragCurrentWeek, activityDragStartWeek]);
+
+  useEffect(() => {
+    if (!activityDragStartWeek) return;
+    const release = () => {
+      setActivityDragStartWeek(null);
+      setActivityDragCurrentWeek(null);
+    };
+    window.addEventListener("mouseup", release);
+    return () => window.removeEventListener("mouseup", release);
+  }, [activityDragStartWeek]);
 
   const openEditor = (user: DashboardUser, week: string) => {
     const currentHours = getProjectHours(user, week, selectedProject, true);
@@ -349,9 +439,34 @@ export function ProjectManagementPage() {
     }
   };
 
+  const persistActivities = async (nextActivities: ActivityDraft[]) => {
+    if (!selectedProject) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const normalizedActivities = ensureUniqueDraftIds(nextActivities, "act");
+      const sortedActivities = [...normalizedActivities].sort(
+        (a, b) =>
+          a.start_date.localeCompare(b.start_date) ||
+          a.end_date.localeCompare(b.end_date) ||
+          a.label.localeCompare(b.label)
+      );
+      await updateProject({
+        project: selectedProject,
+        updates: { activities: sortedActivities },
+      });
+      setActivities(sortedActivities);
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save activities");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openNewMilestoneForWeek = (week: string) => {
     setMilestoneEdit({
-      id: `ms-${Date.now()}`,
+      id: newDraftId("ms"),
       week,
       title: "",
       date: toDateISOFromWeek(week),
@@ -365,6 +480,26 @@ export function ProjectManagementPage() {
       week,
       title: milestone.title,
       date: milestone.date,
+      isNew: false,
+    });
+  };
+
+  const openNewActivityForRange = (startWeek: string, endWeek: string) => {
+    setActivityEdit({
+      id: newDraftId("act"),
+      label: "",
+      start_date: toDateISOFromWeek(startWeek),
+      end_date: toEndDateISOFromWeek(endWeek),
+      isNew: true,
+    });
+  };
+
+  const openExistingActivity = (activity: ActivityDraft) => {
+    setActivityEdit({
+      id: activity.id,
+      label: activity.label,
+      start_date: activity.start_date,
+      end_date: activity.end_date,
       isNew: false,
     });
   };
@@ -397,6 +532,80 @@ export function ProjectManagementPage() {
     const next = milestones.filter((m) => m.id !== milestoneEdit.id);
     await persistMilestones(next);
     setMilestoneEdit(null);
+  };
+
+  const handleActivityCellMouseDown = (week: string) => {
+    setError(null);
+    setActivityDragStartWeek(week);
+    setActivityDragCurrentWeek(week);
+  };
+
+  const handleActivityCellMouseEnter = (week: string) => {
+    if (!activityDragStartWeek) return;
+    setActivityDragCurrentWeek(week);
+  };
+
+  const handleActivityCellMouseUp = (week: string) => {
+    if (!activityDragStartWeek) return;
+    const range = normalizeDraggedWeekRange(activityDragStartWeek, week);
+    setActivityDragStartWeek(null);
+    setActivityDragCurrentWeek(null);
+    if (!range) return;
+    openNewActivityForRange(range.startWeek, range.endWeek);
+  };
+
+  const handleSaveActivityEdit = async () => {
+    if (!activityEdit) return;
+    const label = activityEdit.label.trim();
+    if (!label) {
+      setError("Activity label is required.");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(activityEdit.start_date)) {
+      setError("Activity start date must be YYYY-MM-DD.");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(activityEdit.end_date)) {
+      setError("Activity end date must be YYYY-MM-DD.");
+      return;
+    }
+    if (activityEdit.end_date < activityEdit.start_date) {
+      setError("Activity end date must be on or after start date.");
+      return;
+    }
+
+    const next = activityEdit.isNew
+      ? [
+          ...activities,
+          {
+            id: activityEdit.id,
+            label,
+            start_date: activityEdit.start_date,
+            end_date: activityEdit.end_date,
+          },
+        ]
+      : activities.map((activity) =>
+          activity.id === activityEdit.id
+            ? {
+                ...activity,
+                label,
+                start_date: activityEdit.start_date,
+                end_date: activityEdit.end_date,
+              }
+            : activity
+        );
+    await persistActivities(next);
+    setActivityEdit(null);
+  };
+
+  const handleDeleteActivityEdit = async () => {
+    if (!activityEdit || activityEdit.isNew) {
+      setActivityEdit(null);
+      return;
+    }
+    const next = activities.filter((activity) => activity.id !== activityEdit.id);
+    await persistActivities(next);
+    setActivityEdit(null);
   };
 
   return (
@@ -557,6 +766,61 @@ export function ProjectManagementPage() {
                                 {ms.title}
                               </button>
                             ))}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr className="border-b bg-emerald-50/40">
+                  <td className="sticky left-0 z-10 bg-emerald-50 px-3 py-2 whitespace-nowrap border-r align-top">
+                    <div className="font-medium text-emerald-900">Activities</div>
+                    <div className="text-[10px] text-emerald-700">Date-range bars</div>
+                  </td>
+                  {weeks.map((week) => {
+                    const items = activityLayout.byWeek[week] ?? [];
+                    const isDragged =
+                      !!draggedActivityRange &&
+                      week >= draggedActivityRange.startWeek &&
+                      week <= draggedActivityRange.endWeek;
+                    return (
+                      <td
+                        key={`act-${week}`}
+                        className={`px-0.5 py-1 border-l align-top ${
+                          isDragged ? "bg-emerald-100/70" : ""
+                        }`}
+                        onMouseDown={() => handleActivityCellMouseDown(week)}
+                        onMouseEnter={() => handleActivityCellMouseEnter(week)}
+                        onMouseUp={() => handleActivityCellMouseUp(week)}
+                        title={`Create activity in ${formatWeekLabel(week)} or drag to span weeks`}
+                      >
+                        {activityLayout.rows.length === 0 ? (
+                          <div className="h-6 w-full rounded border border-dashed border-emerald-200 bg-emerald-50/20" />
+                        ) : (
+                          <div className="space-y-1">
+                            {items.map((activity, rowIndex) =>
+                              activity ? (
+                                <button
+                                  key={`${activity.id}-${week}`}
+                                  className={`h-5 w-full border border-emerald-200 bg-emerald-100 text-emerald-900 text-[10px] leading-none transition-colors hover:bg-emerald-200 ${
+                                    activity.isStart ? "rounded-l-md pl-1 text-left" : "rounded-l-none"
+                                  } ${
+                                    activity.isEnd ? "rounded-r-md pr-1" : "rounded-r-none"
+                                  }`}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onMouseUp={(e) => e.stopPropagation()}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openExistingActivity(activity);
+                                  }}
+                                  title={`${activity.label} · ${activity.start_date} → ${activity.end_date}`}
+                                >
+                                  {activity.isStart ? activity.label : ""}
+                                </button>
+                              ) : (
+                                <div key={`empty-${week}-${rowIndex}`} className="h-5" />
+                              )
+                            )}
                           </div>
                         )}
                       </td>
@@ -825,6 +1089,88 @@ export function ProjectManagementPage() {
                     Cancel
                   </Button>
                   <Button size="sm" onClick={handleSaveMilestoneEdit} disabled={saving}>
+                    {saving ? "Saving…" : "Save"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!activityEdit} onOpenChange={(open) => !open && setActivityEdit(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {activityEdit?.isNew ? "Add activity" : "Edit activity"}
+            </DialogTitle>
+          </DialogHeader>
+          {activityEdit && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <span className="font-medium text-gray-900">{selectedProject}</span>
+              </div>
+              <label className="text-xs uppercase tracking-wide text-gray-500 font-medium block">
+                Label
+                <Input
+                  value={activityEdit.label}
+                  onChange={(e) =>
+                    setActivityEdit((prev) =>
+                      prev ? { ...prev, label: e.target.value } : prev
+                    )
+                  }
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs uppercase tracking-wide text-gray-500 font-medium block">
+                  Start date
+                  <Input
+                    type="date"
+                    value={activityEdit.start_date}
+                    onChange={(e) =>
+                      setActivityEdit((prev) =>
+                        prev ? { ...prev, start_date: e.target.value } : prev
+                      )
+                    }
+                  />
+                </label>
+                <label className="text-xs uppercase tracking-wide text-gray-500 font-medium block">
+                  End date
+                  <Input
+                    type="date"
+                    value={activityEdit.end_date}
+                    onChange={(e) =>
+                      setActivityEdit((prev) =>
+                        prev ? { ...prev, end_date: e.target.value } : prev
+                      )
+                    }
+                  />
+                </label>
+              </div>
+              <div className="flex justify-between pt-2 border-t">
+                <div>
+                  {!activityEdit.isNew && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDeleteActivityEdit}
+                      disabled={saving}
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActivityEdit(null)}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSaveActivityEdit} disabled={saving}>
                     {saving ? "Saving…" : "Save"}
                   </Button>
                 </div>

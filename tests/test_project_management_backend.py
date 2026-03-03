@@ -201,6 +201,113 @@ Profile
             project = next(p for p in data['projects'] if p['name'] == 'Project-Y')
             self.assertEqual(project['milestones'][0]['date'], '2026-02-01')
 
+    def test_update_project_metadata_activities_sorted_and_validated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            planning = Path(tmp) / 'planning'
+            projects = planning / 'projects'
+            projects.mkdir(parents=True)
+            path = projects / 'Project-Activities.md'
+            path.write_text(
+                """
+---
+project_id: project-activities
+name: Project-Activities
+---
+Body
+""".lstrip(),
+                encoding='utf-8',
+            )
+
+            result = pussla_engine.update_project_metadata(
+                planning_dir=planning,
+                project='Project-Activities',
+                updates={
+                    'activities': [
+                        {'label': 'Implementation', 'start_date': '2026-03-09', 'end_date': '2026-03-20'},
+                        {'label': 'Discovery', 'start_date': '2026-03-01', 'end_date': '2026-03-08'},
+                    ]
+                },
+            )
+            self.assertEqual(result['project'], 'Project-Activities')
+
+            content = path.read_text(encoding='utf-8')
+            self.assertIn('activities:', content)
+            self.assertLess(content.index('Discovery'), content.index('Implementation'))
+
+            with self.assertRaisesRegex(ValueError, 'activity start_date must be on or before end_date'):
+                pussla_engine.update_project_metadata(
+                    planning_dir=planning,
+                    project='Project-Activities',
+                    updates={
+                        'activities': [
+                            {'label': 'Broken', 'start_date': '2026-03-10', 'end_date': '2026-03-01'},
+                        ]
+                    },
+                )
+
+    def test_build_dashboard_data_reads_activity_dates_from_yaml_date_type(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            planning = root / 'planning'
+            people = planning / 'people'
+            roles = planning / 'roles'
+            projects_dir = planning / 'projects'
+            identity = root / 'identity'
+            people.mkdir(parents=True)
+            roles.mkdir(parents=True)
+            projects_dir.mkdir(parents=True)
+            identity.mkdir(parents=True)
+
+            (roles / 'Dev-Role.md').write_text(
+                """
+---
+role_id: Dev-Role
+name: Developer
+---
+Role description
+""".lstrip(),
+                encoding='utf-8',
+            )
+
+            (projects_dir / 'Project-Z.md').write_text(
+                """
+---
+project_id: project-z
+name: Project-Z
+activities:
+  - id: act-1
+    label: Discovery
+    start_date: 2026-02-02
+    end_date: 2026-02-12
+---
+Body
+""".lstrip(),
+                encoding='utf-8',
+            )
+
+            (people / 'alice.md').write_text(
+                """
+---
+alias: alice
+role_id: Dev-Role
+skills: []
+allocations: []
+---
+Profile
+""".lstrip(),
+                encoding='utf-8',
+            )
+
+            data = pussla_engine.build_dashboard_data(
+                planning_dir=planning,
+                identity_dir=identity,
+                include_pii=False,
+            )
+
+            project = next(p for p in data['projects'] if p['name'] == 'Project-Z')
+            self.assertEqual(project['activities'][0]['start_date'], '2026-02-02')
+            self.assertEqual(project['activities'][0]['end_date'], '2026-02-12')
+
 
 if __name__ == '__main__':
     unittest.main()

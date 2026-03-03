@@ -22,3 +22,31 @@ export function mapMilestonesToWeeks(
   milestones: MilestoneLike[],
   weeks: string[]
 ): Record<string, MilestoneLike[]>;
+
+export interface ActivityLike {
+  id: string;
+  label: string;
+  start_date: string;
+  end_date: string;
+}
+
+export function normalizeDraggedWeekRange(
+  startWeek: string,
+  endWeek: string
+): { startWeek: string; endWeek: string } | null;
+
+export function mapActivitiesToWeeks(
+  activities: ActivityLike[],
+  weeks: string[]
+): Record<string, Array<ActivityLike & { isStart: boolean; isEnd: boolean }>>;
+
+export function buildActivityRowLayout(
+  activities: ActivityLike[],
+  weeks: string[]
+): {
+  rows: ActivityLike[];
+  byWeek: Record<
+    string,
+    Array<(ActivityLike & { isStart: boolean; isEnd: boolean; rowIndex: number }) | null>
+  >;
+};

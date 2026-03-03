@@ -71,6 +71,18 @@ def _parse_frontmatter(path: Path) -> tuple[dict[str, Any], str]:
     return frontmatter, parts[1]
 
 
+def _normalize_iso_date(value: Any) -> str | None:
+    if isinstance(value, (date, datetime)):
+        date_value = value.isoformat()[:10]
+    elif isinstance(value, str):
+        date_value = value
+    else:
+        return None
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_value):
+        return None
+    return date_value
+
+
 def _collect_identities(identity_dir: Path) -> dict[str, dict[str, str | None]]:
     identities: dict[str, dict[str, str | None]] = {}
     if not identity_dir.exists():
@@ -139,30 +151,51 @@ def _collect_project_context(projects_dir: Path) -> dict[str, dict[str, Any]]:
         milestones = frontmatter.get("milestones")
         if not isinstance(milestones, list):
             milestones = []
+        activities = frontmatter.get("activities")
+        if not isinstance(activities, list):
+            activities = []
         normalized_milestones: list[dict[str, Any]] = []
         for idx, ms in enumerate(milestones):
             if not isinstance(ms, dict):
                 continue
             title = ms.get("title")
-            milestone_date = ms.get("date")
+            milestone_date = _normalize_iso_date(ms.get("date"))
             if not isinstance(title, str) or not title.strip():
                 continue
-            if isinstance(milestone_date, (date, datetime)):
-                date_value = milestone_date.isoformat()[:10]
-            elif isinstance(milestone_date, str):
-                date_value = milestone_date
-            else:
-                continue
-            if not re.match(r"^\d{4}-\d{2}-\d{2}$", date_value):
+            if milestone_date is None:
                 continue
             normalized_milestones.append(
                 {
                     "id": ms.get("id") if isinstance(ms.get("id"), str) else f"ms-{idx+1}",
                     "title": title.strip(),
-                    "date": date_value,
+                    "date": milestone_date,
                 }
             )
         normalized_milestones.sort(key=lambda m: m["date"])
+        normalized_activities: list[dict[str, Any]] = []
+        for idx, activity in enumerate(activities):
+            if not isinstance(activity, dict):
+                continue
+            label = activity.get("label")
+            start_date = _normalize_iso_date(activity.get("start_date"))
+            end_date = _normalize_iso_date(activity.get("end_date"))
+            if not isinstance(label, str) or not label.strip():
+                continue
+            if start_date is None or end_date is None:
+                continue
+            if start_date > end_date:
+                continue
+            normalized_activities.append(
+                {
+                    "id": activity.get("id") if isinstance(activity.get("id"), str) else f"act-{idx+1}",
+                    "label": label.strip(),
+                    "start_date": start_date,
+                    "end_date": end_date,
+                }
+            )
+        normalized_activities.sort(
+            key=lambda a: (a["start_date"], a["end_date"], a["label"])
+        )
         contexts[name] = {
             "project_id": frontmatter.get("project_id") if isinstance(frontmatter.get("project_id"), str) else path.stem,
             "status": status if isinstance(status, str) else None,
@@ -173,6 +206,7 @@ def _collect_project_context(projects_dir: Path) -> dict[str, dict[str, Any]]:
             "end_week_override": end_week_override if isinstance(end_week_override, str) else None,
             "hourly_rate": float(hourly_rate) if isinstance(hourly_rate, (int, float)) else None,
             "milestones": normalized_milestones,
+            "activities": normalized_activities,
             "summary": summary,
             "source_file": path.name,
         }
@@ -446,7 +480,7 @@ def update_project_metadata(
     if target_path is None:
         raise FileNotFoundError(f"project file not found for '{project}'")
 
-    allowed = {"hourly_rate", "milestones", "start_week_override", "end_week_override"}
+    allowed = {"hourly_rate", "milestones", "activities", "start_week_override", "end_week_override"}
     for key in updates:
         if key not in allowed:
             raise ValueError(f"unsupported project update field: {key}")
@@ -493,6 +527,38 @@ def update_project_metadata(
             )
         normalized_milestones.sort(key=lambda m: m["date"])
         frontmatter["milestones"] = normalized_milestones
+
+    if "activities" in updates:
+        activities = updates["activities"]
+        if not isinstance(activities, list):
+            raise ValueError("activities must be a list")
+        normalized_activities: list[dict[str, str]] = []
+        for idx, activity in enumerate(activities):
+            if not isinstance(activity, dict):
+                raise ValueError("each activity must be an object")
+            label = activity.get("label")
+            start_date = activity.get("start_date")
+            end_date = activity.get("end_date")
+            if not isinstance(label, str) or not label.strip():
+                raise ValueError("activity label must be a non-empty string")
+            if not isinstance(start_date, str) or not re.match(r"^\d{4}-\d{2}-\d{2}$", start_date):
+                raise ValueError("activity start_date must be in YYYY-MM-DD format")
+            if not isinstance(end_date, str) or not re.match(r"^\d{4}-\d{2}-\d{2}$", end_date):
+                raise ValueError("activity end_date must be in YYYY-MM-DD format")
+            if start_date > end_date:
+                raise ValueError("activity start_date must be on or before end_date")
+            normalized_activities.append(
+                {
+                    "id": activity.get("id") if isinstance(activity.get("id"), str) else f"act-{idx+1}",
+                    "label": label.strip(),
+                    "start_date": start_date,
+                    "end_date": end_date,
+                }
+            )
+        normalized_activities.sort(
+            key=lambda a: (a["start_date"], a["end_date"], a["label"])
+        )
+        frontmatter["activities"] = normalized_activities
 
     rendered = f"---\n{yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True).strip()}\n---\n{body}"
     with NamedTemporaryFile("w", encoding="utf-8", dir=target_path.parent, delete=False) as tmp:

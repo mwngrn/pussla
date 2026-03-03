@@ -147,3 +147,29 @@ This page defines formal requirements for project management and project plannin
 
    The project planning view shall provide cost rollups derived from planned hours and configured rates.
    The view shall support at least weekly and total cost summaries.
+
+.. req:: Date-range activity management
+   :id: REQ_PUSSLA_047
+   :status: implemented
+   :tags: project-management, activities, frontend
+
+   The system shall support project activities stored as date-range entries with a label, start date, and end date.
+   Users shall be able to add, edit, and remove activities.
+
+.. req:: Activity timeline row rendering
+   :id: REQ_PUSSLA_048
+   :status: implemented
+   :tags: project-management, activities, timeline, frontend
+
+   Activities shall be visualized as bars spanning their start and end dates in project planning timeline views.
+   The activities row shall be rendered below the milestones row.
+   Each activity shall reserve one dedicated visual sub-row across the full displayed timeline so rows are not reused between different activities.
+
+.. req:: Activity creation and edit interactions
+   :id: REQ_PUSSLA_049
+   :status: implemented
+   :tags: project-management, activities, ux, frontend
+
+   Users shall be able to create an activity by clicking timeline cells and completing a dialog.
+   Users shall be able to create an activity by click-dragging on the timeline where drag start is the activity start date and release is the activity end date.
+   Clicking an existing activity shall open a dialog where the activity can be edited or deleted.

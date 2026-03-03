@@ -151,12 +151,20 @@ def _resolve_planning_dir(data_dir: Path, planning_override: str | None) -> Path
     return legacy
 
 
-def _resolve_static_dir() -> Path:
+def _resolve_static_dir(static_override: str | None = None) -> Path:
     """Return the directory to serve static files from.
 
     Prefers the compiled React frontend (src/frontend/dist/) when present,
     and falls back to the legacy HTML dashboard in the same directory.
     """
+    if static_override:
+        override_path = Path(static_override)
+        if not (override_path / "index.html").exists():
+            raise SystemExit(
+                f"Static dir does not contain index.html: {override_path}"
+            )
+        return override_path
+
     here = Path(__file__).resolve().parent
     react_dist = here.parent / "frontend" / "dist"
     if (react_dist / "index.html").exists():
@@ -164,8 +172,14 @@ def _resolve_static_dir() -> Path:
     return here
 
 
-def run_server(host: str, port: int, planning_dir: Path, identity_dir: Path) -> None:
-    static_dir = _resolve_static_dir()
+def run_server(
+    host: str,
+    port: int,
+    planning_dir: Path,
+    identity_dir: Path,
+    static_dir_override: str | None = None,
+) -> None:
+    static_dir = _resolve_static_dir(static_dir_override)
 
     def handler(*args, **kwargs):
         return DashboardHandler(*args, static_dir=static_dir, **kwargs)
@@ -207,6 +221,7 @@ def main() -> None:
     parser.add_argument("--data-dir", default="tst-data", help="Base folder containing planning/ (or legacy planing/) and identity/")
     parser.add_argument("--planning-dir", default=None, help="Override planning folder (contains people/, roles/, and projects/)")
     parser.add_argument("--identity-dir", default=None, help="Override identity folder")
+    parser.add_argument("--static-dir", default=None, help="Override static frontend directory (must contain index.html)")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
@@ -218,6 +233,7 @@ def main() -> None:
         port=args.port,
         planning_dir=planning_dir,
         identity_dir=identity_dir,
+        static_dir_override=args.static_dir,
     )
 
 

@@ -173,3 +173,11 @@ This page defines formal requirements for project management and project plannin
    Users shall be able to create an activity by clicking timeline cells and completing a dialog.
    Users shall be able to create an activity by click-dragging on the timeline where drag start is the activity start date and release is the activity end date.
    Clicking an existing activity shall open a dialog where the activity can be edited or deleted.
+
+.. req:: Add person to project planning
+   :id: REQ_PUSSLA_050
+   :status: open
+   :tags: project-management, planning, frontend, ux
+
+   The system shall allow users to add a person to the active project from the project planning view.
+   A newly added person shall be visible as a row in the project planning grid for the active project.

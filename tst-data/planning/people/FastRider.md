@@ -28,6 +28,24 @@ allocations:
   capacity_hours: 40.0
   load: 10
   state: committed
+- project: Internal-Enablement
+  weeks:
+  - 2026-W04
+  - 2026-W05
+  - 2026-W06
+  - 2026-W07
+  - 2026-W08
+  - 2026-W09
+  - 2026-W10
+  - 2026-W11
+  - 2026-W12
+  - 2026-W13
+  - 2026-W14
+  - 2026-W15
+  planned_hours: 35.0
+  capacity_hours: 40.0
+  load: 88
+  state: committed
 - project: Mentoring
   weeks:
   - 2026-W05

@@ -192,6 +192,15 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
    Planned coverage in ``tests/test_activity_interactions.py``.
    Verifies click-to-create dialog flow, drag-to-create start/end behavior, and click-to-edit/delete behavior for existing activities.
 
+.. test:: Add person to project from planning view
+   :id: TEST_PUSSLA_029
+   :status: open
+   :tags: project-management, planning, frontend, integration
+   :links: REQ_PUSSLA_050
+
+   Planned coverage in ``tests/test_project_add_person.py``.
+   Verifies users can add a person to the active project and that the person appears as a row in the project planning grid.
+
 .. test:: People profile title-role and skill schema
    :id: TEST_PUSSLA_015
    :status: open

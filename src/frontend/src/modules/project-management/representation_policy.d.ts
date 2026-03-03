@@ -35,6 +35,12 @@ export function normalizeDraggedWeekRange(
   endWeek: string
 ): { startWeek: string; endWeek: string } | null;
 
+export function listWeeksInRange(
+  weeks: string[],
+  startWeek: string,
+  endWeek: string
+): string[];
+
 export function mapActivitiesToWeeks(
   activities: ActivityLike[],
   weeks: string[]

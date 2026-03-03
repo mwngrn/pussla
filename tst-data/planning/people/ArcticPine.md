@@ -44,5 +44,16 @@ allocations:
   capacity_hours: 40.0
   load: 38
   state: committed
+- project: Project-DeathSkull
+  weeks:
+  - 2026-W13
+  - 2026-W14
+  - 2026-W15
+  - 2026-W16
+  - 2026-W17
+  planned_hours: 25.0
+  capacity_hours: 40.0
+  load: 62
+  state: tentative
 ---
 Profile for ArcticPine.

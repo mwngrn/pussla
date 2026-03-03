@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DashboardUser,
@@ -29,6 +29,7 @@ import {
   buildActivityRowLayout,
   DEFAULT_WEEKLY_CAPACITY_HOURS,
   hoursToLoadPercent,
+  listWeeksInRange,
   loadPercentToHours,
   mapMilestonesToWeeks,
   normalizeDraggedWeekRange,
@@ -37,6 +38,14 @@ import {
 interface EditState {
   user: DashboardUser;
   week: string;
+  hours: string;
+  state: "committed" | "tentative";
+}
+
+interface BulkAllocationEditState {
+  user: DashboardUser;
+  startWeek: string;
+  endWeek: string;
   hours: string;
   state: "committed" | "tentative";
 }
@@ -190,6 +199,7 @@ export function ProjectManagementPage() {
   const [search, setSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [edit, setEdit] = useState<EditState | null>(null);
+  const [bulkEdit, setBulkEdit] = useState<BulkAllocationEditState | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [includeTentative, setIncludeTentative] = useState(true);
@@ -202,8 +212,11 @@ export function ProjectManagementPage() {
   const [milestoneEdit, setMilestoneEdit] = useState<MilestoneEditState | null>(null);
   const [activities, setActivities] = useState<ActivityDraft[]>([]);
   const [activityEdit, setActivityEdit] = useState<ActivityEditState | null>(null);
+  const [allocationDragStart, setAllocationDragStart] = useState<{ alias: string; week: string } | null>(null);
+  const [allocationDragCurrentWeek, setAllocationDragCurrentWeek] = useState<string | null>(null);
   const [activityDragStartWeek, setActivityDragStartWeek] = useState<string | null>(null);
   const [activityDragCurrentWeek, setActivityDragCurrentWeek] = useState<string | null>(null);
+  const suppressSingleEditUntilRef = useRef(0);
 
   const { data, isLoading, error: loadError } = useQuery({
     queryKey: ["dashboard", includePii],
@@ -348,6 +361,11 @@ export function ProjectManagementPage() {
     return normalizeDraggedWeekRange(activityDragStartWeek, activityDragCurrentWeek);
   }, [activityDragCurrentWeek, activityDragStartWeek]);
 
+  const draggedAllocationRange = useMemo(() => {
+    if (!allocationDragStart || !allocationDragCurrentWeek) return null;
+    return normalizeDraggedWeekRange(allocationDragStart.week, allocationDragCurrentWeek);
+  }, [allocationDragCurrentWeek, allocationDragStart]);
+
   useEffect(() => {
     if (!activityDragStartWeek) return;
     const release = () => {
@@ -358,7 +376,18 @@ export function ProjectManagementPage() {
     return () => window.removeEventListener("mouseup", release);
   }, [activityDragStartWeek]);
 
+  useEffect(() => {
+    if (!allocationDragStart) return;
+    const release = () => {
+      setAllocationDragStart(null);
+      setAllocationDragCurrentWeek(null);
+    };
+    window.addEventListener("mouseup", release);
+    return () => window.removeEventListener("mouseup", release);
+  }, [allocationDragStart]);
+
   const openEditor = (user: DashboardUser, week: string) => {
+    if (Date.now() < suppressSingleEditUntilRef.current) return;
     const currentHours = getProjectHours(user, week, selectedProject, true);
     const currentState = getProjectState(user, week, selectedProject);
     setError(null);
@@ -392,6 +421,46 @@ export function ProjectManagementPage() {
       setEdit(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save allocation");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveBulkAllocation = async () => {
+    if (!bulkEdit || !selectedProject) return;
+    const nextHours = Number(bulkEdit.hours);
+    if (!Number.isFinite(nextHours) || nextHours < 0) {
+      setError("Hours must be a non-negative number.");
+      return;
+    }
+
+    const weeksToApply = listWeeksInRange(weeks, bulkEdit.startWeek, bulkEdit.endWeek);
+    if (!weeksToApply.length) {
+      setError("No weeks selected for bulk update.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      for (const week of weeksToApply) {
+        const allocations = buildUpdatedAllocations(
+          bulkEdit.user,
+          week,
+          selectedProject,
+          nextHours,
+          bulkEdit.state
+        );
+        await updateAllocation({
+          alias: bulkEdit.user.alias,
+          week,
+          allocations,
+        });
+      }
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      setBulkEdit(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save bulk allocation");
     } finally {
       setSaving(false);
     }
@@ -606,6 +675,38 @@ export function ProjectManagementPage() {
     const next = activities.filter((activity) => activity.id !== activityEdit.id);
     await persistActivities(next);
     setActivityEdit(null);
+  };
+
+  const handleAllocationCellMouseDown = (alias: string, week: string) => {
+    setAllocationDragStart({ alias, week });
+    setAllocationDragCurrentWeek(week);
+  };
+
+  const handleAllocationCellMouseEnter = (alias: string, week: string, buttons: number) => {
+    if (!allocationDragStart) return;
+    if (buttons !== 1) return;
+    if (allocationDragStart.alias !== alias) return;
+    setAllocationDragCurrentWeek(week);
+  };
+
+  const handleAllocationCellMouseUp = (user: DashboardUser, week: string) => {
+    if (!allocationDragStart) return;
+    if (allocationDragStart.alias !== user.alias) return;
+    const range = normalizeDraggedWeekRange(allocationDragStart.week, week);
+    setAllocationDragStart(null);
+    setAllocationDragCurrentWeek(null);
+    if (!range || range.startWeek === range.endWeek) return;
+    suppressSingleEditUntilRef.current = Date.now() + 250;
+    const currentHours = getProjectHours(user, range.startWeek, selectedProject, true);
+    const currentState = getProjectState(user, range.startWeek, selectedProject);
+    setError(null);
+    setBulkEdit({
+      user,
+      startWeek: range.startWeek,
+      endWeek: range.endWeek,
+      hours: String(currentHours),
+      state: currentState,
+    });
   };
 
   return (
@@ -848,6 +949,11 @@ export function ProjectManagementPage() {
                     {weeks.map((week) => {
                       const hours = getProjectHours(user, week, selectedProject, includeTentative);
                       const state = getProjectState(user, week, selectedProject);
+                      const isDraggedAllocation =
+                        !!draggedAllocationRange &&
+                        allocationDragStart?.alias === user.alias &&
+                        week >= draggedAllocationRange.startWeek &&
+                        week <= draggedAllocationRange.endWeek;
                       return (
                         <td key={`${user.alias}-${week}`} className="px-1 py-1 border-l">
                           <button
@@ -857,7 +963,15 @@ export function ProjectManagementPage() {
                                   ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                                   : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
                                 : "border-gray-200 text-gray-400 hover:bg-gray-50"
-                            }`}
+                            } ${isDraggedAllocation ? "ring-2 ring-emerald-400 ring-inset" : ""}`}
+                            onMouseDown={(e) => {
+                              if (e.button !== 0) return;
+                              handleAllocationCellMouseDown(user.alias, week);
+                            }}
+                            onMouseEnter={(e) =>
+                              handleAllocationCellMouseEnter(user.alias, week, e.buttons)
+                            }
+                            onMouseUp={() => handleAllocationCellMouseUp(user, week)}
                             onClick={() => openEditor(user, week)}
                             title="Edit project hours/state for this person/week"
                           >
@@ -965,6 +1079,79 @@ export function ProjectManagementPage() {
                 </Button>
                 <Button size="sm" onClick={handleSaveAllocation} disabled={saving}>
                   {saving ? "Saving…" : "Save"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!bulkEdit} onOpenChange={(open) => !open && setBulkEdit(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Apply allocation across weeks</DialogTitle>
+          </DialogHeader>
+          {bulkEdit && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <span className="font-medium text-gray-900">{selectedProject}</span>
+                {" · "}
+                <span>{bulkEdit.user.display_name}</span>
+                {" · "}
+                <span>
+                  {formatWeekLabel(bulkEdit.startWeek)} to {formatWeekLabel(bulkEdit.endWeek)}
+                </span>
+                {" · "}
+                <span>{listWeeksInRange(weeks, bulkEdit.startWeek, bulkEdit.endWeek).length} weeks</span>
+              </div>
+
+              <label className="text-xs uppercase tracking-wide text-gray-500 font-medium block">
+                Hours
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={bulkEdit.hours}
+                  onChange={(e) =>
+                    setBulkEdit((prev) =>
+                      prev ? { ...prev, hours: e.target.value } : prev
+                    )
+                  }
+                />
+              </label>
+
+              <label className="text-xs uppercase tracking-wide text-gray-500 font-medium block">
+                State
+                <select
+                  value={bulkEdit.state}
+                  onChange={(e) =>
+                    setBulkEdit((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            state: e.target.value as "committed" | "tentative",
+                          }
+                        : prev
+                    )
+                  }
+                  className="h-9 w-full rounded border border-gray-300 px-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="committed">Committed</option>
+                  <option value="tentative">Tentative</option>
+                </select>
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBulkEdit(null)}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSaveBulkAllocation} disabled={saving}>
+                  {saving ? "Saving…" : "Apply"}
                 </Button>
               </div>
             </div>

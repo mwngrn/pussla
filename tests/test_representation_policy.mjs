@@ -5,6 +5,7 @@ import {
   DEFAULT_WEEKLY_CAPACITY_HOURS,
   hoursToLoadPercent,
   loadPercentToHours,
+  listWeeksInRange,
   isoWeekKeyFromDate,
   mapActivitiesToWeeks,
   mapMilestonesToWeeks,
@@ -61,6 +62,20 @@ test("normalizeDraggedWeekRange returns sorted week bounds", () => {
     startWeek: "2026-W09",
     endWeek: "2026-W12",
   });
+});
+
+test("listWeeksInRange returns inclusive ordered subset from displayed weeks", () => {
+  const weeks = ["2026-W09", "2026-W10", "2026-W11", "2026-W12"];
+  assert.deepEqual(listWeeksInRange(weeks, "2026-W10", "2026-W12"), [
+    "2026-W10",
+    "2026-W11",
+    "2026-W12",
+  ]);
+  assert.deepEqual(listWeeksInRange(weeks, "2026-W12", "2026-W10"), [
+    "2026-W10",
+    "2026-W11",
+    "2026-W12",
+  ]);
 });
 
 test("mapActivitiesToWeeks creates week segments with start/end flags", () => {

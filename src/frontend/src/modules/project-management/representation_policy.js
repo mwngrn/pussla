@@ -49,6 +49,14 @@ export function normalizeDraggedWeekRange(startWeek, endWeek) {
     : { startWeek: endWeek, endWeek: startWeek };
 }
 
+export function listWeeksInRange(weeks, startWeek, endWeek) {
+  const normalized = normalizeDraggedWeekRange(startWeek, endWeek);
+  if (!normalized) return [];
+  return weeks.filter(
+    (week) => week >= normalized.startWeek && week <= normalized.endWeek
+  );
+}
+
 export function mapActivitiesToWeeks(activities, weeks) {
   const map = {};
   const sorted = [...activities].sort(

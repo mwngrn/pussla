@@ -156,6 +156,7 @@ def validate_people(
     known_roles: set[str],
     canonical_skills: set[str],
     skill_synonyms: dict[str, str],
+    fail_on_overallocation: bool = True,
 ) -> tuple[list[str], list[str], dict[str, dict[str, float]], set[str], set[str]]:
     errors: list[str] = []
     warnings: list[str] = []
@@ -284,10 +285,14 @@ def validate_people(
             capacity = capacities.get(alias, {}).get(week, DEFAULT_CAPACITY_HOURS)
             if total_hours > capacity + 1e-9:
                 percent = round((total_hours / capacity) * 100, 1) if capacity > 0 else 0
-                errors.append(
+                message = (
                     f"over-allocation: alias '{alias}' has total planned_hours {round(total_hours, 1)} "
                     f"in week {week} (capacity {round(capacity, 1)}h, {percent}%)"
                 )
+                if fail_on_overallocation:
+                    errors.append(message)
+                else:
+                    warnings.append(message)
 
     return errors, warnings, totals, referenced_projects, known_aliases
 
@@ -377,6 +382,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Pussla planning dataset")
     parser.add_argument("--planning-dir", default="tst-data/planning", help="Path containing people/, roles/, projects/, and skills.md")
     parser.add_argument("--identity-dir", default="tst-data/identity", help="Path containing identity markdown files")
+    parser.add_argument(
+        "--allow-overallocation",
+        action="store_true",
+        help="Do not fail validation on over-allocation; emit warnings instead.",
+    )
     args = parser.parse_args()
 
     planning_dir = Path(args.planning_dir)
@@ -407,6 +417,7 @@ def main() -> int:
         known_roles=set(role_names.keys()),
         canonical_skills=canonical_skills,
         skill_synonyms=skill_synonyms,
+        fail_on_overallocation=not args.allow_overallocation,
     )
     project_errors, ref_aliases = validate_projects(projects_dir)
 

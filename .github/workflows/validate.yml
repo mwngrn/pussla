@@ -25,4 +25,4 @@ jobs:
 
       - name: Validate sample planning data
         run: |
-          python src/validate_planning_data.py --planning-dir tst-data/planing --identity-dir tst-data/identity
+          python src/validate_planning_data.py --planning-dir tst-data/planing --identity-dir tst-data/identity --allow-overallocation

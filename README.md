@@ -58,7 +58,7 @@ To see your own allocation, look for your alias in `tst-data/planning/people/`.
 
 ### 3. Validation (The "Linter")
 Every push triggers a CI/CD pipeline that checks for:
-* **Overbooking:** If total `load > 100%`, you'll get a warning.
+* **Overbooking:** If total `load > 100%`, you'll get a warning (does not fail CI).
 * **PII Leaks:** Ensures no names have accidentally been written in the public allocation files.
 
 ---

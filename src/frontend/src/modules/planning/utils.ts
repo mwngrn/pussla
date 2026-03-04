@@ -210,3 +210,35 @@ export function calculateWeekAverages(
   }
   return result;
 }
+
+export function calculateMonthAllocationPercentages(
+  weeks: string[],
+  users: Array<{ weekly_stats: Array<{ week: string; total_load: number }> }>,
+  monthGroups: MonthGroup[]
+): number[] {
+  const weekIndex = new Map<string, number>();
+  for (let i = 0; i < weeks.length; i += 1) {
+    weekIndex.set(weeks[i], i);
+  }
+
+  return monthGroups.map((group) => {
+    if (!users.length || !group.weeks.length) return 0;
+
+    let totalLoad = 0;
+    let slotCount = 0;
+    for (const user of users) {
+      const stats = user.weekly_stats ?? [];
+      for (const weekKey of group.weeks) {
+        const idx = weekIndex.get(weekKey);
+        if (idx === undefined) continue;
+        const slot = stats[idx];
+        const load = slot && typeof slot.total_load === "number" ? slot.total_load : 0;
+        totalLoad += load;
+        slotCount += 1;
+      }
+    }
+
+    if (!slotCount) return 0;
+    return Math.round((totalLoad / slotCount) * 10) / 10;
+  });
+}

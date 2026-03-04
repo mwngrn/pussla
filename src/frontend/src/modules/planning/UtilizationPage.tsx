@@ -14,6 +14,7 @@ import {
   getFirstWeekOfQuarter,
   getCurrentISOWeek,
   calculateWeekAverages,
+  calculateMonthAllocationPercentages,
 } from "./utils";
 
 type SortKey = "surname" | "firstname" | "avg4";
@@ -185,7 +186,13 @@ export function UtilizationPage() {
     URL.revokeObjectURL(url);
   };
 
-  const { monthGroups } = buildCalendarGroups(weeks);
+  const { yearGroups, monthGroups } = buildCalendarGroups(weeks);
+  const monthPercents = useMemo(
+    () => calculateMonthAllocationPercentages(weeks, rows, monthGroups),
+    [weeks, rows, monthGroups]
+  );
+  const renderPercent = (value: number) =>
+    `${Number(value).toFixed(1).replace(/\\.0$/, "")}%`;
 
   return (
     <div className="p-4 md:p-6 flex flex-col gap-4 h-full">
@@ -306,10 +313,10 @@ export function UtilizationPage() {
         >
           <table className="border-separate border-spacing-0 text-sm">
             <thead>
-              {/* Month header row */}
+              {/* Year header row */}
               <tr>
                 <th
-                  rowSpan={2}
+                  rowSpan={3}
                   className="sticky left-0 z-30 bg-gray-50 border-b border-r px-3 py-2 text-left font-medium text-gray-600 min-w-[160px] whitespace-nowrap"
                 >
                   Person{" "}
@@ -320,7 +327,7 @@ export function UtilizationPage() {
                   )}
                 </th>
                 <th
-                  rowSpan={2}
+                  rowSpan={3}
                   onClick={toggleAvgSort}
                   className={`sticky left-[160px] z-30 border-b border-r px-3 py-2 text-center font-medium min-w-[56px] whitespace-nowrap cursor-pointer select-none hover:bg-gray-100 ${
                     sortKey === "avg4"
@@ -332,13 +339,28 @@ export function UtilizationPage() {
                   Avg 4W
                   {sortKey === "avg4" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
                 </th>
-                {monthGroups.map((mg) => (
+                {yearGroups.map((yg) => (
+                  <th
+                    key={`y-${yg.label}`}
+                    colSpan={yg.span}
+                    className="border-b border-l px-2 py-1 text-center text-xs font-semibold text-gray-500 bg-gray-50 whitespace-nowrap"
+                  >
+                    {yg.label}
+                  </th>
+                ))}
+              </tr>
+              {/* Month header row */}
+              <tr>
+                {monthGroups.map((mg, idx) => (
                   <th
                     key={mg.key}
                     colSpan={mg.span}
                     className="border-b border-l px-2 py-1 text-center text-xs font-semibold text-gray-500 bg-gray-50 whitespace-nowrap"
                   >
-                    {mg.label}
+                    <div>{mg.label}</div>
+                    <div className="text-[10px] font-normal text-gray-400">
+                      {renderPercent(monthPercents[idx] ?? 0)}
+                    </div>
                   </th>
                 ))}
               </tr>

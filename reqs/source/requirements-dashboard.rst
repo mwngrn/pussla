@@ -20,7 +20,7 @@ visualization, filtering, formatting, and edit behavior.
 
 .. req:: Dashboard grouped calendar headers
    :id: REQ_PUSSLA_013
-   :status: open
+   :status: implemented
    :tags: dashboard, ux, frontend
 
    The dashboard shall show grouped headers with Year at the top, Month (without year) in the middle, and Week at the bottom.

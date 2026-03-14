@@ -1,0 +1,23 @@
+[package]
+name = "pussla-desktop"
+version = "0.1.0"
+description = "Pussla desktop shell"
+authors = ["Pussla"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+
+[profile.dev]
+incremental = true
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"

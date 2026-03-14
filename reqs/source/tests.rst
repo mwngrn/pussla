@@ -300,6 +300,60 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
    Planned coverage in ``tests/test_dashboard_sync.py``.
    Verifies GUI refresh retrieves remote changes and warns when local unpublished changes would be affected.
 
+.. test:: Tauri desktop shell starts local services with external data folder
+   :id: TEST_PUSSLA_034
+   :status: open
+   :tags: desktop, deployment, integration
+   :links: REQ_PUSSLA_054
+
+   Planned coverage in ``tests/test_tauri_shell.py``.
+   Verifies the Tauri desktop shell launches, starts the local service layer, and targets an external selected data folder.
+
+.. test:: Desktop first-run open or create data folder flow
+   :id: TEST_PUSSLA_035
+   :status: open
+   :tags: desktop, ux, integration
+   :links: REQ_PUSSLA_055
+
+   Planned coverage in ``tests/test_desktop_first_run.py``.
+   Verifies first run offers both opening an existing data folder and creating a new one without terminal steps.
+
+.. test:: Desktop bootstrap creates complete default structure
+   :id: TEST_PUSSLA_036
+   :status: open
+   :tags: desktop, bootstrap, integration
+   :links: REQ_PUSSLA_056
+
+   Planned coverage in ``tests/test_desktop_bootstrap.py``.
+   Verifies desktop bootstrap creates planning and identity folders plus valid starter content.
+
+.. test:: Desktop remembers active data folder
+   :id: TEST_PUSSLA_037
+   :status: open
+   :tags: desktop, state, unit
+   :links: REQ_PUSSLA_057
+
+   Planned coverage in ``tests/test_desktop_data_folder_state.py``.
+   Verifies the app persists and restores the last selected active data folder.
+
+.. test:: Invalid desktop data folder blocks planning views
+   :id: TEST_PUSSLA_038
+   :status: open
+   :tags: desktop, validation, integration
+   :links: REQ_PUSSLA_058, REQ_PUSSLA_059
+
+   Planned coverage in ``tests/test_desktop_invalid_data_folder.py``.
+   Verifies invalid data folders block normal planning entry, show repair guidance, and do not force sync setup during first-run bootstrap.
+
+.. test:: Linux desktop packaging verification
+   :id: TEST_PUSSLA_039
+   :status: open
+   :tags: desktop, deployment, release
+   :links: REQ_PUSSLA_060
+
+   Planned coverage in ``tests/test_linux_desktop_packaging.py``.
+   Verifies the Linux desktop packaging target builds and launches with expected runtime prerequisites.
+
 
 Test-to-Requirement Matrix
 ==========================

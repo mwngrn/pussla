@@ -141,3 +141,61 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
    The dashboard shall allow a user to refresh local planning data from the shared planning repository from the GUI without requiring terminal usage.
    The refresh flow shall retrieve and apply remote changes before continued editing, or explain why it cannot do so safely.
    The dashboard shall clearly present when local unpublished changes would be affected by the refresh.
+
+.. req:: Tauri desktop shell with external data folder
+   :id: REQ_PUSSLA_054
+   :status: open
+   :tags: desktop, deployment, architecture
+
+   The system shall provide a Tauri-based desktop application shell for non-technical users.
+   The desktop shell shall start the local service layer automatically and present the application in an app window.
+   The desktop shell shall use an external user-selected data folder rather than storing planning data inside the installed application.
+
+.. req:: First-run choice to open or create data folder
+   :id: REQ_PUSSLA_055
+   :status: open
+   :tags: desktop, ux, bootstrap
+
+   On first run, the desktop application shall guide the user to either open an existing Pussla data folder or create a new one.
+   The first-run flow shall not require terminal usage or manual file creation by the user.
+
+.. req:: Bootstrap creates complete default data structure
+   :id: REQ_PUSSLA_056
+   :status: open
+   :tags: desktop, bootstrap, data-model
+
+   Creating a new Pussla data folder from the desktop application shall create the required ``planning/`` and ``identity/`` structure.
+   Bootstrap shall create at minimum ``planning/people/``, ``planning/projects/``, ``planning/roles/``, ``planning/skills.md``, and ``identity/``.
+   Bootstrap shall include valid starter content, including at least one default role and a valid skills catalog skeleton.
+
+.. req:: Persist active data folder in local app settings
+   :id: REQ_PUSSLA_057
+   :status: open
+   :tags: desktop, ux, state
+
+   The desktop application shall remember the last selected active data folder in local application settings.
+   On later startup, the application shall reuse that folder until the user chooses another one.
+
+.. req:: Invalid data folder blocks planning and offers repair guidance
+   :id: REQ_PUSSLA_058
+   :status: open
+   :tags: desktop, validation, ux
+
+   If the selected data folder is missing required structure or files, the desktop application shall block entry into normal planning views.
+   The application shall explain what is missing and offer actionable repair or bootstrap guidance.
+
+.. req:: Shared sync setup is separate from first-run bootstrap
+   :id: REQ_PUSSLA_059
+   :status: open
+   :tags: desktop, workflow, collaboration
+
+   The desktop application's first-run bootstrap shall not require the user to configure shared collaboration or Git remote settings.
+   Shared sync setup shall be a later explicit workflow after the data folder is created or selected.
+
+.. req:: Linux-first desktop delivery
+   :id: REQ_PUSSLA_060
+   :status: open
+   :tags: desktop, deployment, release
+
+   The first supported desktop packaging target for non-technical users shall be Linux.
+   Additional desktop platforms may be added later, but Linux shall be the initial delivery and verification target for installer and runtime behavior.

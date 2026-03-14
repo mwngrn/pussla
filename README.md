@@ -100,6 +100,38 @@ The React dashboard now includes a `Planning Sync` panel for users who do not wa
 * `Refresh` safely brings in remote planning updates when there are no local unpublished changes that would be affected.
 * If the repository is not configured for shared sync, or if Git detects a conflict-risk situation, the dashboard explains what needs to be fixed before continuing.
 
+### Tauri desktop shell
+There is now an initial Tauri desktop shell under `src/frontend/src-tauri/`.
+
+Linux dependencies for a new Ubuntu machine:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  libglib2.0-dev \
+  libwebkit2gtk-4.1-dev \
+  libsoup-3.0-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev \
+  build-essential \
+  pkg-config
+```
+
+Development run:
+1. Go to `src/frontend/`
+2. Run `npm install`
+3. Run `npm run tauri:dev -- -- --data-dir /path/to/data-root`
+
+Verification:
+1. Go to `src/frontend/src-tauri/`
+2. Run `cargo check`
+
+Current shell behavior:
+* reserves a local port
+* starts the Python dashboard backend automatically
+* points the desktop window at the local dashboard URL when the backend is ready
+* uses an external data folder via `--data-dir` or `PUSSLA_DATA_DIR`
+
 
 ### Your frontend in my backend ;) 
 To use the richer frontend developed in react, go to the .src/frontend folder and: 

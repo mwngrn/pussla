@@ -252,3 +252,9 @@ __snapshots__/
 # Keep frontend source lib files tracked (overrides generic 'lib/' ignore)
 !src/frontend/src/lib/
 !src/frontend/src/lib/**
+
+# Tauri generated files
+src/frontend/src-tauri/gen/
+
+# Local helper notes
+tauri-linux-deps.txt

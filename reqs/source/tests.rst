@@ -264,6 +264,42 @@ This page maps unit test cases to requirements using Sphinx-needs ``test`` items
    Planned coverage in ``tests/test_staffing_conflicts.py``.
    Verifies fallback recommendations when no full match exists and conflict handling behavior during booking.
 
+.. test:: Dashboard startup resolves selected data root
+   :id: TEST_PUSSLA_030
+   :status: open
+   :tags: dashboard, deployment, cli, unit
+   :links: REQ_PUSSLA_044, REQ_PUSSLA_045, REQ_PUSSLA_046
+
+   Planned coverage in ``tests/test_dashboard_startup_paths.py``.
+   Verifies auto-detect behavior, explicit ``--data-dir`` precedence, resolved subpaths, and actionable startup failures.
+
+.. test:: React dashboard startup opens default browser
+   :id: TEST_PUSSLA_031
+   :status: open
+   :tags: dashboard, deployment, ux, unit
+   :links: REQ_PUSSLA_051
+
+   Planned coverage in ``tests/test_run_react_dashboard.py``.
+   Verifies successful startup launches the dashboard URL in the default browser.
+
+.. test:: Dashboard publish planning changes
+   :id: TEST_PUSSLA_032
+   :status: open
+   :tags: dashboard, workflow, integration
+   :links: REQ_PUSSLA_052
+
+   Planned coverage in ``tests/test_dashboard_sync.py``.
+   Verifies GUI publish creates a versioned save, sends it to the shared repository, and surfaces actionable errors.
+
+.. test:: Dashboard refresh planning data
+   :id: TEST_PUSSLA_033
+   :status: open
+   :tags: dashboard, workflow, integration
+   :links: REQ_PUSSLA_053
+
+   Planned coverage in ``tests/test_dashboard_sync.py``.
+   Verifies GUI refresh retrieves remote changes and warns when local unpublished changes would be affected.
+
 
 Test-to-Requirement Matrix
 ==========================

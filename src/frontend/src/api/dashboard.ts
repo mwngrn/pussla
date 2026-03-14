@@ -68,6 +68,46 @@ export interface DashboardData {
   raw_allocations: RawAllocation[];
 }
 
+export interface SyncChange {
+  code: string;
+  path: string;
+}
+
+export interface SyncStatus {
+  repo_root: string;
+  data_dir: string;
+  data_scope: string;
+  branch: string;
+  head: string;
+  last_commit_subject: string;
+  publish_target: string | null;
+  has_publish_target: boolean;
+  auto_configured_target: boolean;
+  scoped_dirty: boolean;
+  repo_dirty: boolean;
+  scoped_changes: SyncChange[];
+  repo_change_count: number;
+  ahead: number | null;
+  behind: number | null;
+}
+
+export interface PublishResult {
+  ok: boolean;
+  commit_id: string;
+  summary: string;
+  publish_target: string;
+  status: SyncStatus;
+}
+
+export interface RefreshResult {
+  ok: boolean;
+  updated: boolean;
+  message: string;
+  previous_head?: string;
+  head?: string;
+  status: SyncStatus;
+}
+
 // ── Fetchers ──────────────────────────────────────────────────────────────────
 
 export async function fetchDashboardData(
@@ -83,6 +123,47 @@ export async function fetchDashboardData(
     );
   }
   return res.json() as Promise<DashboardData>;
+}
+
+export async function fetchSyncStatus(): Promise<SyncStatus> {
+  const res = await fetch("/api/sync/status");
+  const data = await res.json().catch(() => ({ error: res.statusText }));
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error ?? `HTTP ${res.status}`
+    );
+  }
+  return data as SyncStatus;
+}
+
+export async function publishPlanningChanges(summary: string): Promise<PublishResult> {
+  const res = await fetch("/api/sync/publish", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ summary }),
+  });
+  const data = await res.json().catch(() => ({ error: "Invalid response" }));
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error ?? `HTTP ${res.status}`
+    );
+  }
+  return data as PublishResult;
+}
+
+export async function refreshPlanningData(): Promise<RefreshResult> {
+  const res = await fetch("/api/sync/refresh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json().catch(() => ({ error: "Invalid response" }));
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error ?? `HTTP ${res.status}`
+    );
+  }
+  return data as RefreshResult;
 }
 
 export interface UpdateAllocationPayload {

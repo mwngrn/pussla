@@ -17,6 +17,7 @@ import { ProjectsPage } from "@/modules/projects/ProjectsPage";
 import { AllocationsPage } from "@/modules/allocations/AllocationsPage";
 import { ProjectManagementPage } from "@/modules/project-management/ProjectManagementPage";
 import { SettingsPage } from "@/modules/settings/SettingsPage";
+import { SyncPanel } from "@/modules/system/SyncPanel";
 import {
   GanttChartSquare,
   BarChart2,
@@ -185,6 +186,8 @@ function AppLayout({ children }: { children: ReactNode }) {
             )}
             {includePii ? "PII visible" : "Aliases only"}
           </button>
+
+          <SyncPanel />
         </div>
       </aside>
 

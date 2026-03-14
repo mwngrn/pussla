@@ -97,14 +97,15 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
 
    The system shall support a hybrid startup mode for local dashboard execution.
    The dashboard shall support auto-detecting data roots from the current working directory for simple non-developer usage.
-   The dashboard shall also support explicit path-based startup via command arguments (for example ``--data-dir``, ``--planning-dir``, ``--identity-dir``) for advanced and scripted usage.
+   The dashboard shall also support explicit startup by passing a data root via command arguments (for example ``--data-dir``) for advanced and scripted usage.
+   The selected data root shall be used to resolve the planning and identity folders required by the dashboard.
 
 .. req:: Startup path precedence and deterministic behavior
    :id: REQ_PUSSLA_045
    :status: open
    :tags: deployment, cli, reliability
 
-   When explicit path arguments are provided, explicit paths shall take precedence over auto-detection.
+   When an explicit data root argument is provided, it shall take precedence over auto-detection.
    Startup path resolution behavior shall be deterministic and documented so users can predict which dataset is loaded.
    Startup output shall show the resolved planning and identity paths.
 
@@ -113,5 +114,30 @@ privacy boundaries, validation expectations, and planning-as-code data handling.
    :status: open
    :tags: deployment, ux, validation
 
-   If startup cannot resolve valid planning and identity roots, the system shall fail with actionable error messages.
-   Error messages shall include expected directory/file structure and example commands for both auto-detected and explicit-path startup modes.
+   If startup cannot resolve a valid data root with the required planning and identity structure, the system shall fail with actionable error messages.
+   Error messages shall include expected directory/file structure and example commands for both auto-detected and explicit data-root startup modes.
+
+.. req:: React dashboard startup launches default browser
+   :id: REQ_PUSSLA_051
+   :status: open
+   :tags: deployment, ux, dashboard
+
+   When ``run-react-dashboard.sh`` is started successfully, it shall launch the dashboard URL in the user's default web browser.
+
+.. req:: Publish planning changes from dashboard
+   :id: REQ_PUSSLA_052
+   :status: open
+   :tags: dashboard, ux, collaboration, workflow
+
+   The dashboard shall allow a user to publish saved planning changes to the shared planning repository from the GUI without requiring terminal usage.
+   The publish flow shall collect a user-facing change summary, create a versioned save of the current planning data, and send it to the configured shared repository.
+   The dashboard shall report publish success or failure with actionable guidance when the operation cannot be completed.
+
+.. req:: Refresh planning data from shared source
+   :id: REQ_PUSSLA_053
+   :status: open
+   :tags: dashboard, ux, collaboration, workflow
+
+   The dashboard shall allow a user to refresh local planning data from the shared planning repository from the GUI without requiring terminal usage.
+   The refresh flow shall retrieve and apply remote changes before continued editing, or explain why it cannot do so safely.
+   The dashboard shall clearly present when local unpublished changes would be affected by the refresh.

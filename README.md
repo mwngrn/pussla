@@ -78,13 +78,27 @@ You can run the dashboard as a local web GUI, similar to `backlog.md`, without d
 2. Open:
    `http://127.0.0.1:8080`
 
+Startup will auto-detect the data root from your current directory when it contains `planning/` + `identity/`, or from `./tst-data` when you run from the repository root.
+
 Optional flags:
 * `--port 8090`
 * `--port 0` (auto-select a free local port)
 * `--data-dir /path/to/data-root` (expects `planning/` and `identity/` under that folder; legacy `planing/` is also supported)
-* `--planning-dir tst-data/planning`
-* `--identity-dir tst-data/identity`
 * `--static-dir src/frontend/dist` (force React frontend bundle)
+* `--launch-browser` (opens the dashboard in your default browser after successful startup)
+
+For the React dashboard shortcut:
+
+1. Run `./run-react-dashboard.sh`
+2. The script starts the local dashboard on port `8081` by default and opens it in your default browser.
+3. Pass another port as the first argument if needed, for example `./run-react-dashboard.sh 8090`.
+
+### Non-technical data sync from the dashboard
+The React dashboard now includes a `Planning Sync` panel for users who do not want to use the terminal.
+
+* `Publish` creates a versioned save of the current planning changes and sends it to the configured shared Git repository.
+* `Refresh` safely brings in remote planning updates when there are no local unpublished changes that would be affected.
+* If the repository is not configured for shared sync, or if Git detects a conflict-risk situation, the dashboard explains what needs to be fixed before continuing.
 
 
 ### Your frontend in my backend ;) 

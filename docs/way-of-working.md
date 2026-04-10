@@ -5,22 +5,26 @@ This document defines how work is captured, tracked, and documented in Pussla fo
 ## Source of Truth by Folder
 
 ### `reqs/` - Requirements
+
 - Requirements are authored and tracked using Sphinx-needs.
 - Requirement IDs and lifecycle status are maintained in requirement files under `reqs/`.
 - If behavior is expected from the system, it should be represented as a requirement.
 
 ### `backlog/` - Stories and To-Do Work
+
 - Stories, implementation tasks, and ongoing to-do items are tracked in Backlog.md.
 - Task creation, status updates, and completion follow the Backlog MCP workflow.
 - Backlog tracks delivery commitments and execution state.
 - When committing work done for a Backlog task, include a reference to the task in the commit message (for example: `Implemented task-3`).
 
 ### `docs/` - Documentation and Design Decisions
+
 - Architecture and design decisions are documented in `docs/`.
 - Technical documentation, rationale, and process details are maintained here.
 - Use this folder for durable knowledge that explains why and how things are built.
 
 ### `README.md` - Project Entry Point
+
 - `README.md` provides high-level project information.
 - It links to deeper documentation in `docs/` and to key working conventions.
 - Keep the README concise and navigational, not exhaustive.

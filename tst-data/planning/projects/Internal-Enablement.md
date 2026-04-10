@@ -18,7 +18,7 @@ milestones:
 - id: ms-1772264953614
   title: Mission
   date: '2026-06-05'
-hourly_rate: 600.0
+hourly_rate: 800.0
 activities:
 - id: act-718762b2-f2f3-47ec-b4e1-8d979b354853
   label: test 1-10
@@ -32,6 +32,10 @@ activities:
   label: test
   start_date: '2026-02-09'
   end_date: '2026-05-10'
+- id: act-30fa7400-180a-456b-a776-05b4737e7f79
+  label: hello world
+  start_date: '2026-04-13'
+  end_date: '2026-05-24'
 - id: act-8567ba68-c373-4117-b23b-8af4f6410a9e
   label: teatar igen
   start_date: '2026-04-13'

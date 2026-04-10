@@ -3,6 +3,17 @@ alias: FastRider
 role_id: Consultant
 skills: []
 allocations:
+- project: Project-DeathSkull
+  weeks:
+  - 2026-W18
+  - 2026-W19
+  - 2026-W20
+  - 2026-W21
+  - 2026-W22
+  planned_hours: 40.0
+  capacity_hours: 40.0
+  load: 100
+  state: committed
 - project: Project-Neon
   weeks:
   - 2026-W09
@@ -67,5 +78,12 @@ allocations:
   capacity_hours: 40.0
   load: 32
   state: committed
+- project: Internal-Enablement
+  weeks:
+  - 2026-W19
+  planned_hours: 30.0
+  capacity_hours: 40.0
+  load: 75
+  state: tentative
 ---
 Profile for FastRider.

@@ -23,10 +23,10 @@ Adopt the identity-shield pattern explicitly, and decide the location of the ide
 
 ### Option A — Internal `/identity/` folder (self-contained)
 The `/identity/` directory lives inside the Pussla repo, as ADR-003 currently implies. Pussla works standalone with no external dependency.
-- ➖ If the same people also live in the Obsidian identity vault (`wngrn`), their real names now exist in **two** places → sync burden and a doubled leak surface.
+- ➖ If the same people also live in a separate Obsidian identity vault, their real names now exist in **two** places → sync burden and a doubled leak surface.
 
 ### Option B — External/configurable identity vault (single source of truth) — *recommended*
-Pussla is pointed at **two locations**: an identity vault and a planning vault — much like Obsidian works today. The identity vault may be an existing store (e.g. the `identity-shield` / `wngrn` vault) or any folder. Pussla itself then holds **no PII at all**: it only ever stores aliases in `/planning/`, and a local resolver joins against the configured identity vault for human display.
+Pussla is pointed at **two locations**: an identity vault and a planning vault — much like Obsidian works today. The identity vault may be an existing store (e.g. the `identity-shield` identity vault) or any folder. Pussla itself then holds **no PII at all**: it only ever stores aliases in `/planning/`, and a local resolver joins against the configured identity vault for human display.
 - ➕ Real names live in exactly one place; Pussla never becomes a PII store.
 - ➕ Multiple apps (Obsidian, Pussla, future tools) share the same identity source.
 - ➖ Pussla depends on a configured identity vault to show real names (falls back to aliases without it).

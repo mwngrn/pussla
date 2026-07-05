@@ -155,7 +155,7 @@ Need help fitting the pieces together? See `docs/` and the design decisions ther
 ---
 
 ## ♥️ Contributing 
-- Why is something done in a specific way: see `docs/design decisions/`.
+- Why is something done in a specific way: see `docs/decisions/`.
 - Requirements are in Sphinx-needs format in `reqs/`.
 - Way of Working (requirements, backlog, docs responsibilities) is defined in `docs/way-of-working.md`.
 

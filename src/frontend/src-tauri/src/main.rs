@@ -1,157 +1,276 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::env;
-use std::net::{TcpListener, TcpStream};
-use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::path::PathBuf;
 use std::sync::Mutex;
-use std::thread;
-use std::time::{Duration, Instant};
 
-use tauri::{AppHandle, Manager, RunEvent};
+use serde::{Deserialize, Deserializer, Serialize};
+use tauri::Manager;
 
-#[derive(Default)]
-struct BackendProcess(Mutex<Option<Child>>);
+use pussla_core::dashboard::DashboardData;
+use pussla_core::sync::{PublishResult, RefreshResult, SyncStatus};
+use pussla_core::validation::DatasetValidation;
+use pussla_core::write::{
+    AllocationUpdate, ActivityUpdate, MilestoneUpdate, ProjectMetadataUpdate,
+    UpdateProjectMetadataResult, UpdateWeekAllocationsResult,
+};
 
-struct RuntimePaths {
-    dashboard_script: PathBuf,
-    static_dir: PathBuf,
-    repo_root: Option<PathBuf>,
+/// The resolved external data folder (ADR-007): unchanged UX from the
+/// previous Python-shell version — `--data-dir`, `PUSSLA_DATA_DIR`, a
+/// `tst-data/` sibling in a dev checkout, or `~/Pussla-data`, in that order.
+struct AppState {
+    data_dir: Mutex<PathBuf>,
 }
 
-fn main() {
-    tauri::Builder::default()
-        .manage(BackendProcess::default())
-        .setup(|app| {
-            let window = app
-                .get_webview_window("main")
-                .ok_or_else(|| "main window is missing".to_string())?;
-            let runtime_paths = resolve_runtime_paths(app.handle())?;
-            let data_dir = resolve_data_dir(&runtime_paths)?;
-            let port = reserve_port()?;
-            let python = env::var("PUSSLA_PYTHON").unwrap_or_else(|_| "python3".to_string());
-
-            window
-                .eval(&format!(
-                    "window.__PUSSLA_DESKTOP__?.showStatus({});",
-                    serde_json::to_string(&format!(
-                        "Starting local service...\nData folder: {}",
-                        data_dir.display()
-                    ))?
-                ))
-                .ok();
-
-            let child = spawn_backend(&python, &runtime_paths, &data_dir, port)?;
-            *app.state::<BackendProcess>().0.lock().unwrap() = Some(child);
-
-            let window_for_thread = window.clone();
-            thread::spawn(move || {
-                let url = format!("http://127.0.0.1:{port}");
-                match wait_for_backend(&url, Duration::from_secs(20)) {
-                    Ok(()) => {
-                        let script = format!(
-                            "window.location.replace({});",
-                            serde_json::to_string(&url).unwrap()
-                        );
-                        let _ = window_for_thread.eval(&script);
-                    }
-                    Err(message) => {
-                        let script = format!(
-                            "window.__PUSSLA_DESKTOP__?.showStatus({});",
-                            serde_json::to_string(&message).unwrap()
-                        );
-                        let _ = window_for_thread.eval(&script);
-                    }
-                }
-            });
-
-            Ok(())
-        })
-        .build(tauri::generate_context!())
-        .expect("failed to build Tauri application")
-        .run(|app, event| match event {
-            RunEvent::Exit | RunEvent::ExitRequested { .. } => {
-                if let Some(mut child) = app.state::<BackendProcess>().0.lock().unwrap().take() {
-                    let _ = child.kill();
-                    let _ = child.wait();
-                }
-            }
-            _ => {}
-        });
+fn planning_dir(data_dir: &std::path::Path) -> PathBuf {
+    let preferred = data_dir.join("planning");
+    let legacy = data_dir.join("planing");
+    if preferred.exists() || !legacy.exists() {
+        preferred
+    } else {
+        legacy
+    }
 }
 
-fn resolve_runtime_paths(app: &AppHandle) -> Result<RuntimePaths, String> {
-    let manifest_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let repo_root = manifest_root.join("../../..").canonicalize().ok();
+fn identity_dir(data_dir: &std::path::Path) -> PathBuf {
+    data_dir.join("identity")
+}
 
-    if let Some(root) = repo_root.clone() {
-        let script = root.join("src/dashboard/run_dashboard.py");
-        let static_dir = root.join("src/frontend/dist");
-        if script.exists() && static_dir.join("index.html").exists() {
-            return Ok(RuntimePaths {
-                dashboard_script: script,
-                static_dir,
-                repo_root: Some(root),
-            });
+fn now_iso_seconds() -> String {
+    chrono::Local::now().format("%Y-%m-%dT%H:%M:%S").to_string()
+}
+
+// --- Tauri commands: one per src/frontend/src/api/dashboard.ts call ---
+
+#[tauri::command(rename_all = "snake_case")]
+fn get_dashboard_data(state: tauri::State<AppState>, include_pii: bool) -> Result<DashboardData, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    Ok(pussla_core::dashboard::build_dashboard_data(
+        &planning_dir(&data_dir),
+        &identity_dir(&data_dir),
+        include_pii,
+        now_iso_seconds(),
+    ))
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn validate_dataset(state: tauri::State<AppState>) -> Result<DatasetValidation, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    let result = pussla_core::validation::validate_dataset(&planning_dir(&data_dir), &identity_dir(&data_dir), false);
+    Ok(result)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn sync_status(state: tauri::State<AppState>) -> Result<SyncStatus, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    pussla_core::sync::get_sync_status(&data_dir).map_err(|e| e.message)
+}
+
+#[derive(Serialize)]
+struct OkWrapped<T: Serialize> {
+    ok: bool,
+    #[serde(flatten)]
+    inner: T,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn sync_publish(state: tauri::State<AppState>, summary: String) -> Result<OkWrapped<PublishResult>, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    pussla_core::sync::publish_changes(&data_dir, &summary)
+        .map(|inner| OkWrapped { ok: true, inner })
+        .map_err(|e| e.message)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn sync_refresh(state: tauri::State<AppState>) -> Result<OkWrapped<RefreshResult>, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    pussla_core::sync::refresh_changes(&data_dir)
+        .map(|inner| OkWrapped { ok: true, inner })
+        .map_err(|e| e.message)
+}
+
+/// Distinguishes "field absent" (`None`) from "field present, value `null`"
+/// (`Some(None)`) — needed for [`ProjectUpdatesPayload`]'s clear-a-field
+/// semantics (ADR-011 write path: `core::write::ProjectMetadataUpdate`).
+fn deserialize_present<'de, T, D>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    T: Deserialize<'de>,
+    D: Deserializer<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Some)
+}
+
+#[derive(Deserialize)]
+struct AllocationItemPayload {
+    project: String,
+    load: Option<i64>,
+    planned_hours: Option<f64>,
+    capacity_hours: Option<f64>,
+}
+
+#[derive(Deserialize)]
+struct UpdateAllocationPayload {
+    alias: String,
+    week: String,
+    allocations: Vec<AllocationItemPayload>,
+}
+
+#[derive(Serialize)]
+struct UpdateAllocationResult {
+    ok: bool,
+    updated: UpdateWeekAllocationsResultWire,
+}
+
+#[derive(Serialize)]
+struct UpdateWeekAllocationsResultWire {
+    alias: String,
+    week: String,
+    projects_count: usize,
+    total_load: i64,
+    total_planned_hours: f64,
+    capacity_hours: f64,
+}
+
+impl From<UpdateWeekAllocationsResult> for UpdateWeekAllocationsResultWire {
+    fn from(r: UpdateWeekAllocationsResult) -> Self {
+        Self {
+            alias: r.alias,
+            week: r.week,
+            projects_count: r.projects_count,
+            total_load: r.total_load,
+            total_planned_hours: r.total_planned_hours,
+            capacity_hours: r.capacity_hours,
         }
     }
-
-    let resource_dir = app
-        .path()
-        .resource_dir()
-        .map_err(|e| format!("Could not resolve Tauri resource directory: {e}"))?;
-    let dashboard_script = first_existing_path(
-        &resource_dir,
-        &[
-            "src/dashboard/run_dashboard.py",
-            "dashboard/run_dashboard.py",
-            "resources/src/dashboard/run_dashboard.py",
-        ],
-    )
-    .ok_or_else(|| {
-        format!(
-            "Could not locate bundled dashboard backend resources under {}",
-            resource_dir.display()
-        )
-    })?;
-    let static_dir = first_existing_dir(
-        &resource_dir,
-        &[
-            "dist",
-            "src/frontend/dist",
-            "resources/dist",
-            "resources/src/frontend/dist",
-        ],
-    )
-    .ok_or_else(|| {
-        format!(
-            "Could not locate bundled frontend dist under {}",
-            resource_dir.display()
-        )
-    })?;
-
-    Ok(RuntimePaths {
-        dashboard_script,
-        static_dir,
-        repo_root: None,
-    })
 }
 
-fn first_existing_path(base: &Path, candidates: &[&str]) -> Option<PathBuf> {
-    candidates
-        .iter()
-        .map(|candidate| base.join(candidate))
-        .find(|path| path.exists())
+#[tauri::command(rename_all = "snake_case")]
+fn update_allocation(
+    state: tauri::State<AppState>,
+    payload: UpdateAllocationPayload,
+) -> Result<UpdateAllocationResult, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    let allocations: Vec<AllocationUpdate> = payload
+        .allocations
+        .into_iter()
+        .map(|a| AllocationUpdate {
+            project: a.project,
+            load: a.load,
+            planned_hours: a.planned_hours,
+            capacity_hours: a.capacity_hours,
+            state: None,
+        })
+        .collect();
+
+    pussla_core::write::update_week_allocations(&planning_dir(&data_dir), &payload.alias, &payload.week, &allocations)
+        .map(|updated| UpdateAllocationResult {
+            ok: true,
+            updated: updated.into(),
+        })
+        .map_err(|e| e.to_string())
 }
 
-fn first_existing_dir(base: &Path, candidates: &[&str]) -> Option<PathBuf> {
-    candidates
-        .iter()
-        .map(|candidate| base.join(candidate))
-        .find(|path| path.join("index.html").exists())
+#[derive(Deserialize)]
+struct MilestoneItemPayload {
+    id: Option<String>,
+    title: String,
+    date: String,
 }
 
-fn resolve_data_dir(runtime: &RuntimePaths) -> Result<PathBuf, String> {
+#[derive(Deserialize)]
+struct ActivityItemPayload {
+    id: Option<String>,
+    label: String,
+    start_date: String,
+    end_date: String,
+}
+
+#[derive(Deserialize, Default)]
+struct ProjectUpdatesPayload {
+    #[serde(default, deserialize_with = "deserialize_present")]
+    hourly_rate: Option<Option<f64>>,
+    #[serde(default, deserialize_with = "deserialize_present")]
+    start_week_override: Option<Option<String>>,
+    #[serde(default, deserialize_with = "deserialize_present")]
+    end_week_override: Option<Option<String>>,
+    milestones: Option<Vec<MilestoneItemPayload>>,
+    activities: Option<Vec<ActivityItemPayload>>,
+}
+
+#[derive(Deserialize)]
+struct UpdateProjectPayload {
+    project: String,
+    updates: ProjectUpdatesPayload,
+}
+
+#[derive(Serialize)]
+struct UpdateProjectResult {
+    ok: bool,
+    updated: UpdateProjectMetadataResultWire,
+}
+
+#[derive(Serialize)]
+struct UpdateProjectMetadataResultWire {
+    project: String,
+    file: String,
+}
+
+impl From<UpdateProjectMetadataResult> for UpdateProjectMetadataResultWire {
+    fn from(r: UpdateProjectMetadataResult) -> Self {
+        Self {
+            project: r.project,
+            file: r.file,
+        }
+    }
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn update_project(
+    state: tauri::State<AppState>,
+    payload: UpdateProjectPayload,
+) -> Result<UpdateProjectResult, String> {
+    let data_dir = state.data_dir.lock().unwrap().clone();
+    let updates = ProjectMetadataUpdate {
+        hourly_rate: payload.updates.hourly_rate,
+        start_week_override: payload.updates.start_week_override,
+        end_week_override: payload.updates.end_week_override,
+        milestones: payload.updates.milestones.map(|list| {
+            list.into_iter()
+                .map(|m| MilestoneUpdate {
+                    id: m.id,
+                    title: m.title,
+                    date: m.date,
+                })
+                .collect()
+        }),
+        activities: payload.updates.activities.map(|list| {
+            list.into_iter()
+                .map(|a| ActivityUpdate {
+                    id: a.id,
+                    label: a.label,
+                    start_date: a.start_date,
+                    end_date: a.end_date,
+                })
+                .collect()
+        }),
+    };
+
+    pussla_core::write::update_project_metadata(&planning_dir(&data_dir), &payload.project, &updates)
+        .map(|updated| UpdateProjectResult {
+            ok: true,
+            updated: updated.into(),
+        })
+        .map_err(|e| e.to_string())
+}
+
+// --- Data-folder resolution (ADR-007, unchanged UX from the Python-shell version) ---
+
+fn repo_root() -> Option<PathBuf> {
+    let manifest_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    manifest_root.join("../../..").canonicalize().ok()
+}
+
+fn resolve_data_dir() -> Result<PathBuf, String> {
     if let Some(path) = parse_flag_value("--data-dir") {
         return Ok(path);
     }
@@ -163,7 +282,7 @@ fn resolve_data_dir(runtime: &RuntimePaths) -> Result<PathBuf, String> {
         }
     }
 
-    if let Some(root) = &runtime.repo_root {
+    if let Some(root) = repo_root() {
         let test_data = root.join("tst-data");
         if test_data.exists() {
             return Ok(test_data);
@@ -207,65 +326,48 @@ fn runtime_args() -> Vec<String> {
     env::args().skip(1).collect()
 }
 
-fn reserve_port() -> Result<u16, String> {
-    let listener = TcpListener::bind("127.0.0.1:0")
-        .map_err(|e| format!("Could not reserve a local port for the desktop backend: {e}"))?;
-    listener
-        .local_addr()
-        .map(|addr| addr.port())
-        .map_err(|e| format!("Could not read reserved local port: {e}"))
-}
+fn main() {
+    tauri::Builder::default()
+        .setup(|app| {
+            let window = app
+                .get_webview_window("main")
+                .ok_or_else(|| "main window is missing".to_string())?;
 
-fn spawn_backend(
-    python: &str,
-    runtime: &RuntimePaths,
-    data_dir: &Path,
-    port: u16,
-) -> Result<Child, String> {
-    let script_dir = runtime
-        .dashboard_script
-        .parent()
-        .ok_or_else(|| "Dashboard script has no parent directory".to_string())?;
-    let mut command = Command::new(python);
-    command
-        .arg(&runtime.dashboard_script)
-        .arg("--host")
-        .arg("127.0.0.1")
-        .arg("--port")
-        .arg(port.to_string())
-        .arg("--data-dir")
-        .arg(data_dir)
-        .arg("--static-dir")
-        .arg(&runtime.static_dir)
-        .current_dir(script_dir)
-        .stdin(Stdio::null())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit());
-    command
-        .spawn()
-        .map_err(|e| format!("Could not start the local Python service with '{python}': {e}"))
-}
+            match resolve_data_dir() {
+                Ok(data_dir) => {
+                    app.manage(AppState {
+                        data_dir: Mutex::new(data_dir),
+                    });
+                }
+                Err(message) => {
+                    window
+                        .eval(format!(
+                            "window.__PUSSLA_DESKTOP__?.showStatus({});",
+                            serde_json::to_string(&message)?
+                        ))
+                        .ok();
+                    // Fall back to an empty/unset data dir so the UI's own
+                    // first-run flow (ADR-007) can prompt for a folder
+                    // instead of the app failing to start entirely.
+                    app.manage(AppState {
+                        data_dir: Mutex::new(PathBuf::new()),
+                    });
+                }
+            }
 
-fn wait_for_backend(url: &str, timeout: Duration) -> Result<(), String> {
-    let start = Instant::now();
-    let host = "127.0.0.1";
-    let port = url
-        .rsplit(':')
-        .next()
-        .ok_or_else(|| "Could not parse backend URL".to_string())?
-        .parse::<u16>()
-        .map_err(|e| format!("Could not parse backend port: {e}"))?;
-
-    while start.elapsed() < timeout {
-        if TcpStream::connect((host, port)).is_ok() {
-            return Ok(());
-        }
-        thread::sleep(Duration::from_millis(150));
-    }
-
-    Err(format!(
-        "The local Pussla service did not become ready in time.\n\nTried to reach {url}.\nCheck that Python is installed and that the selected data folder is valid."
-    ))
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_dashboard_data,
+            validate_dataset,
+            sync_status,
+            sync_publish,
+            sync_refresh,
+            update_allocation,
+            update_project,
+        ])
+        .run(tauri::generate_context!())
+        .expect("failed to run Tauri application");
 }
 
 #[cfg(test)]
@@ -283,6 +385,16 @@ mod tests {
         );
     }
 
+    #[test]
+    fn parse_flag_value_supports_two_argument_syntax() {
+        let args = vec!["--data-dir".to_string(), "/tmp/pussla2".to_string()];
+        let _guard = ArgsGuard::new(args);
+        assert_eq!(
+            parse_flag_value("--data-dir"),
+            Some(PathBuf::from("/tmp/pussla2"))
+        );
+    }
+
     struct ArgsGuard {
         original: Vec<String>,
     }
@@ -290,8 +402,6 @@ mod tests {
     impl ArgsGuard {
         fn new(replacement: Vec<String>) -> Self {
             let original: Vec<String> = std::env::args().collect();
-            // Tests run in-process, so use the unstable test-only override through env.
-            // Fall back to verifying the parser helper via direct branch coverage in real runs.
             std::env::set_var("PUSSLA_TEST_ARGS", replacement.join("\n"));
             Self { original }
         }

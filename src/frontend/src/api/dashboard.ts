@@ -109,61 +109,41 @@ export interface RefreshResult {
 }
 
 // ── Fetchers ──────────────────────────────────────────────────────────────────
+//
+// Calls the Tauri desktop shell's commands (src-tauri/src/main.rs) directly —
+// no local HTTP server. See docs/decisions/adr-011-rust-core-desktop-first-architecture.md.
+// `invoke()` rejects with whatever string the Rust command's `Err` carries;
+// normalized to an `Error` here so callers can keep using `.message` like
+// they did with the previous fetch()-based errors.
+
+import { invoke } from "@tauri-apps/api/core";
+
+async function invokeOrThrow<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  try {
+    return await invoke<T>(cmd, args);
+  } catch (err) {
+    throw new Error(typeof err === "string" ? err : String(err));
+  }
+}
 
 export async function fetchDashboardData(
   includePii: boolean
 ): Promise<DashboardData> {
-  const res = await fetch(
-    `/api/dashboard-data?include_pii=${includePii ? "1" : "0"}`
-  );
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(
-      (body as { error?: string }).error ?? `HTTP ${res.status}`
-    );
-  }
-  return res.json() as Promise<DashboardData>;
+  return invokeOrThrow<DashboardData>("get_dashboard_data", {
+    include_pii: includePii,
+  });
 }
 
 export async function fetchSyncStatus(): Promise<SyncStatus> {
-  const res = await fetch("/api/sync/status");
-  const data = await res.json().catch(() => ({ error: res.statusText }));
-  if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? `HTTP ${res.status}`
-    );
-  }
-  return data as SyncStatus;
+  return invokeOrThrow<SyncStatus>("sync_status");
 }
 
 export async function publishPlanningChanges(summary: string): Promise<PublishResult> {
-  const res = await fetch("/api/sync/publish", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ summary }),
-  });
-  const data = await res.json().catch(() => ({ error: "Invalid response" }));
-  if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? `HTTP ${res.status}`
-    );
-  }
-  return data as PublishResult;
+  return invokeOrThrow<PublishResult>("sync_publish", { summary });
 }
 
 export async function refreshPlanningData(): Promise<RefreshResult> {
-  const res = await fetch("/api/sync/refresh", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
-  });
-  const data = await res.json().catch(() => ({ error: "Invalid response" }));
-  if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? `HTTP ${res.status}`
-    );
-  }
-  return data as RefreshResult;
+  return invokeOrThrow<RefreshResult>("sync_refresh");
 }
 
 export interface UpdateAllocationPayload {
@@ -211,35 +191,13 @@ export interface UpdateProjectResult {
 export async function updateAllocation(
   payload: UpdateAllocationPayload
 ): Promise<UpdateAllocationResult> {
-  const res = await fetch("/api/allocation/update", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({ error: "Invalid response" }));
-  if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? `HTTP ${res.status}`
-    );
-  }
-  return data as UpdateAllocationResult;
+  return invokeOrThrow<UpdateAllocationResult>("update_allocation", { payload });
 }
 
 export async function updateProject(
   payload: UpdateProjectPayload
 ): Promise<UpdateProjectResult> {
-  const res = await fetch("/api/project/update", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json().catch(() => ({ error: "Invalid response" }));
-  if (!res.ok) {
-    throw new Error(
-      (data as { error?: string }).error ?? `HTTP ${res.status}`
-    );
-  }
-  return data as UpdateProjectResult;
+  return invokeOrThrow<UpdateProjectResult>("update_project", { payload });
 }
 
 // ── Derived helpers ───────────────────────────────────────────────────────────

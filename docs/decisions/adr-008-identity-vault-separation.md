@@ -1,7 +1,7 @@
 # Design Choice: Identity-Vault Separation (identity-shield pattern)
 
 ## Status
-**Proposed** — recommendation: Option B. Awaiting decision.
+**Accepted (Option B)**.
 
 ## Context
 [ADR-001](adr-001-person-centric-vs-project-centric.md) stores planning per person, and [ADR-003](adr-003-alias-design.md) establishes that aliases are the only identifiers used in `/planning/`, with the alias→real-name mapping confined to an `/identity/` directory that is the "source of truth" for re-identification.
@@ -60,6 +60,7 @@ flowchart LR
 - The MCP server must be verified to have **no route** to the identity vault; add a test/check (cf. the `pii-check` scanner) that fails if any `/planning/` file contains a person-pointer.
 - ADR-003's `/identity/` remains valid as the *interface*; this ADR makes its location configurable and clarifies it may be shared/external.
 - The pattern is documented for cross-project reuse (Obsidian note: "identity-shield pattern").
+- **No-persisted-real-names guard rule**: any local cache or settings file the Pussla app writes to disk (last-opened data-folder path, a resolved-name display cache, sync state) may **only ever contain aliases, never resolved real names** — resolution happens in-memory per session and is never written back out. This generalizes a concrete leak the `vault-bridge` plugin shipped and fixed in its own ADR-001: its search/link index (`externalIndex`) persisted resolved real names from identity-shield-protected files into `data.json`, which then synced to mobile. The same class of bug is trivial to reintroduce here (e.g. a "recently viewed people" cache, an offline display-name cache) unless it's called out as an explicit rule up front. `core/` (see ADR-011) should include a guard test asserting no cache/settings serialization path can carry a resolved name.
 
 ## References
 - [ADR-001 — Person-centric vs project-centric storage](adr-001-person-centric-vs-project-centric.md)

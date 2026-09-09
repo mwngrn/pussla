@@ -58,5 +58,19 @@ allocations:
   capacity_hours: 40.0
   load: 25
   state: tentative
+- project: Platform-Core
+  weeks:
+  - 2026-W20
+  planned_hours: 40.0
+  capacity_hours: 40.0
+  load: 100
+  state: committed
+- project: Internal-Enablement
+  weeks:
+  - 2026-W21
+  planned_hours: 40.0
+  capacity_hours: 40.0
+  load: 100
+  state: committed
 ---
 Profile for LimeComet.

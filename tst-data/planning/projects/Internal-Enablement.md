@@ -9,37 +9,44 @@ capacity_target: 80
 team_aliases:
 - FishCatcher
 milestones:
+- id: ms-66a8a606-5dfa-4675-afd8-fb467558ddc4
+  title: typiskt
+  date: 2026-01-19
 - id: ms-1772264760862
   title: Test
-  date: '2026-02-23'
+  date: 2026-02-23
 - id: ms-1772264767081
   title: VIKTIGT
-  date: '2026-04-06'
+  date: 2026-04-06
 - id: ms-1772264953614
   title: Mission
-  date: '2026-06-05'
+  date: 2026-06-05
 hourly_rate: 800.0
 activities:
 - id: act-718762b2-f2f3-47ec-b4e1-8d979b354853
   label: test 1-10
-  start_date: '2025-12-29'
-  end_date: '2026-03-08'
+  start_date: 2025-12-29
+  end_date: 2026-03-08
 - id: act-1e621871-85eb-48b3-9874-b566b35234cc
   label: test kort
-  start_date: '2026-01-05'
-  end_date: '2026-01-25'
+  start_date: 2026-01-05
+  end_date: 2026-01-25
+- id: act-3e020d3b-687d-4201-b35d-5f8ff065ed2d
+  label: kalle
+  start_date: 2026-01-12
+  end_date: 2026-02-15
 - id: act-8c033a90-4b9e-4d99-aac3-bba88529e882
   label: test
-  start_date: '2026-02-09'
-  end_date: '2026-05-10'
+  start_date: 2026-02-09
+  end_date: 2026-05-10
 - id: act-30fa7400-180a-456b-a776-05b4737e7f79
   label: hello world
-  start_date: '2026-04-13'
-  end_date: '2026-05-24'
+  start_date: 2026-04-13
+  end_date: 2026-05-24
 - id: act-8567ba68-c373-4117-b23b-8af4f6410a9e
   label: teatar igen
-  start_date: '2026-04-13'
-  end_date: '2026-06-07'
+  start_date: 2026-04-13
+  end_date: 2026-06-07
 ---
 ## Scope
 Internal tooling improvements and process documentation updates.

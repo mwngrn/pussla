@@ -12,10 +12,10 @@ This document defines how work is captured, tracked, and documented in Pussla fo
 
 ### `backlog/` - Stories and To-Do Work
 
-- Stories, implementation tasks, and ongoing to-do items are tracked in Backlog.md.
+- Stories, implementation tasks, and ongoing to-do items are tracked as m2d stories in `backlog/`.
 - Task creation, status updates, and completion follow the Backlog MCP workflow.
 - Backlog tracks delivery commitments and execution state.
-- When committing work done for a Backlog task, include a reference to the task in the commit message (for example: `Implemented task-3`).
+- When committing work done for a Backlog task, include a reference to the task in the commit message (for example: `Implemented PUS-7KQ3`, older commits `task-3`).
 
 ### `docs/` - Documentation and Design Decisions
 
@@ -32,7 +32,7 @@ This document defines how work is captured, tracked, and documented in Pussla fo
 ## Workflow Summary
 
 1. Capture or update requirements in `reqs/` (Sphinx-needs).
-2. Plan and track implementation in `backlog/` (Backlog.md).
+2. Plan and track implementation in `backlog/` (m2d stories, see `backlog/AGENTS.md`).
 3. Record design and documentation updates in `docs/`.
 4. Keep `README.md` aligned as the top-level overview and index.
 

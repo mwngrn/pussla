@@ -119,8 +119,8 @@ sudo apt-get install -y \
 
 Development run:
 1. Go to `src/frontend/`
-2. Run `npm install`
-3. Run `npm run tauri:dev -- -- --data-dir /path/to/data-root`
+2. Run `pnpm install`
+3. Run `pnpm run tauri:dev -- -- --data-dir /path/to/data-root`
 
 Verification:
 1. Go to `src/frontend/src-tauri/`
@@ -135,8 +135,8 @@ Current shell behavior:
 
 ### Your frontend in my backend ;) 
 To use the richer frontend developed in react, go to the .src/frontend folder and: 
-- npm install 
-- npm run build
+- pnpm install
+- pnpm run build
 
 ---
 

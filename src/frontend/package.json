@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "tauri:dev": "npm run build && tauri dev",
+    "tauri:dev": "pnpm run build && tauri dev",
     "tauri:build": "tauri build"
   },
   "dependencies": {

@@ -3,8 +3,8 @@ set -euo pipefail
 
 FRONTEND_DIR="${FRONTEND_DIR:-src/frontend}"
 
-if ! command -v npm >/dev/null 2>&1; then
-  echo "Error: npm was not found in PATH."
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "Error: pnpm was not found in PATH."
   exit 1
 fi
 
@@ -20,15 +20,10 @@ fi
 
 cd "${FRONTEND_DIR}"
 
-if [ -f "package-lock.json" ]; then
-  echo "Installing frontend dependencies with npm ci"
-  npm ci
-else
-  echo "Installing frontend dependencies with npm install"
-  npm install
-fi
+echo "Installing frontend dependencies with pnpm install"
+pnpm install --frozen-lockfile
 
 echo "Building frontend"
-npm run build
+pnpm run build
 
 echo "Frontend build complete: ${FRONTEND_DIR}/dist"

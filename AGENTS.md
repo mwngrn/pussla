@@ -36,3 +36,10 @@ Canonical WoW document: `docs/way-of-working.md`.
 - Stories, to-do items, and implementation work are tracked in Backlog.md in `backlog/`.
 - Documentation and design decisions are maintained in `docs/`.
 - `README.md` stays high-level and links to deeper documentation.
+
+## Backlog
+
+Stories är vanliga markdownnoter i `backlog/` (m2d-format, id-prefix `PUS`).
+Läs `backlog/AGENTS.md` innan du skapar eller ändrar en story. Det är den
+delade instruktionen från m2d-format och ändras inte här. Commits refererar
+storyns id: `(PUS-7KQ3)`, äldre `TASK-N`.

@@ -32,17 +32,34 @@ repository go in that repository's own AGENTS.md.
 - An epic is a note with `#epic/<state>` and a folder of the same name
   beside it, which holds its stories.
 
+## Where the board lives
+
+The board's state is on the default branch (`main`), not on the branch
+you have checked out. Read it from there after `git fetch`.
+
+- **On `main`, pushed directly, no merge request:** taking a story,
+  creating one, `priority`, moving to `review`, `wait` or back, deleting.
+  Commits that touch only this folder: `backlog: take PREFIX-7KQ3`.
+- **On your work branch, with the code:** the story's content
+  (Description, criteria and `✓`, Implementation Notes, Final Summary)
+  and, as the last change after rebasing on `main`, `#story/done`.
+- Never change a status line or frontmatter on a work branch, except
+  that final `#story/done`.
+
 ## Working on a story
 
-- Starting: set `#story/do` and write in Implementation Notes which
-  session or agent you are. Do not edit a story another session has in
+- Starting, **before you branch:** `git fetch`, then on `main` set
+  `#story/do`, `@name` and in Implementation Notes which session or agent
+  you are, commit and push. If the push is rejected, fetch and check that
+  nobody else took it. Do not edit a story another session has in
   `#story/do`, and create stories one at a time.
-- Done in code but not tried by a person: `#story/review`, and write what
-  to try and where.
-- Finished: `#story/done` and a short Final Summary. A story that will
-  not be done is deleted, not marked.
-- Update the story in the same commit as the work, or right after.
-  Commit messages reference its id: `(PREFIX-7KQ3)`.
+- Done in code but not tried by a person: `#story/review` on `main`, and
+  write what to try and where (the branch or merge request).
+- Finished: `#story/done` and a short Final Summary on the work branch,
+  so done arrives with the merge. A story that will not be done is
+  deleted on `main`, not marked.
+- Update the story's content in the same commit as the work, or right
+  after. Commit messages reference its id: `(PREFIX-7KQ3)`.
 - Anything still open, also what only a person can do (try it, decide),
   is written in the story, not only in a chat or another note.
 
